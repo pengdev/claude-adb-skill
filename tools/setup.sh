@@ -1,5 +1,8 @@
 #!/bin/bash
-# One-time setup: creates a Python venv with uiautomator2 in the tools directory.
+# One-time setup: creates a Python venv with uiautomator2 and initializes the
+# ATX agent on the connected device.
+#
+# NOTE: A device must be connected (adb devices) for the ATX agent init step.
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -14,4 +17,7 @@ fi
 
 echo "Installing uiautomator2 ..."
 "$VENV_DIR/bin/pip" install --quiet uiautomator2
+
+echo "Initializing ATX agent on connected device ..."
+"$VENV_DIR/bin/uiautomator2" init
 echo "Done. gesture_helper.py is ready to use."

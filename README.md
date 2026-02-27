@@ -1,6 +1,6 @@
 # ADB Skill for Claude Code
 
-A [Claude Code skill](https://docs.anthropic.com/en/docs/claude-code/skills) that lets Claude operate on connected Android devices via ADB — install apps, view logs, take screenshots, tap UI elements, and perform multi-touch map gestures (pinch zoom, tilt, rotate).
+A [Claude Code skill](https://docs.anthropic.com/en/docs/claude-code/skills) that lets Claude operate on connected Android devices via ADB — install apps, view logs, take screenshots, tap UI elements, and perform multi-touch map gestures (pinch zoom, tilt, rotate) and long-press.
 
 ## Installation
 
@@ -14,7 +14,39 @@ git clone https://github.com/pengdev/claude-adb-skill.git ~/.claude/skills/claud
 
 - `adb` on your PATH (from Android SDK platform-tools)
 - A connected Android device or emulator (`adb devices` shows it)
-- Python 3 (for multi-touch gestures only)
+- Python 3 (for multi-touch gestures and long-press)
+- `setup.sh` initializes the ATX agent on the connected device — a device must be connected when you run it
+
+## Permissions
+
+Adding permission rules to `~/.claude/settings.json` avoids repeated prompts during adb operations. Dangerous commands like `adb uninstall` and `adb shell pm clear` are intentionally excluded and will always prompt for confirmation.
+
+Add the following to your `~/.claude/settings.json`:
+
+```json
+"permissions": {
+  "allow": [
+    "Bash(adb devices *)",
+    "Bash(adb install *)",
+    "Bash(adb shell input *)",
+    "Bash(adb shell wm *)",
+    "Bash(adb shell getprop *)",
+    "Bash(adb shell dumpsys *)",
+    "Bash(adb shell pm list *)",
+    "Bash(adb shell am *)",
+    "Bash(adb push *)",
+    "Bash(*/skills/claude-adb-skill/tools/screenshot.sh*)",
+    "Bash(*/skills/claude-adb-skill/tools/logcat.sh *)",
+    "Bash(*/skills/claude-adb-skill/tools/ui_dump.sh*)",
+    "Bash(*/skills/claude-adb-skill/tools/cleanup.sh*)",
+    "Bash(*/skills/claude-adb-skill/tools/gesture_helper.py *)",
+    "Bash(*/skills/claude-adb-skill/tools/setup.sh*)",
+    "Bash([ -d *)",
+    "Read(/tmp/*.png)",
+    "Read(/tmp/ui_dump.xml)"
+  ]
+}
+```
 
 ## What It Can Do
 
@@ -22,15 +54,16 @@ git clone https://github.com/pengdev/claude-adb-skill.git ~/.claude/skills/claud
 |---|---|
 | **Device management** | List devices, get device info, screen resolution |
 | **App lifecycle** | Install/uninstall APKs, launch activities, force-stop |
-| **Logcat** | PID-filtered log capture, live streaming with timeout |
+| **Build & deploy** | Build debug APK with Gradle, install on device |
+| **Logcat** | PID-filtered log capture, live streaming with timeout, safe fallback when PID unavailable |
 | **Files** | Push/pull files to/from device |
 | **Screenshots** | Capture screen, view it visually, identify UI elements |
-| **UI interaction** | Tap, swipe, type text, key events, UI hierarchy dump |
+| **UI interaction** | Tap, swipe, long-press, type text, key events, UI hierarchy dump |
 | **Map gestures** | Pan, double-tap zoom, pinch zoom in/out, tilt, rotate |
 
 ## Multi-Touch Gestures
 
-Multi-touch (pinch, tilt, rotate) uses [uiautomator2](https://github.com/openatx/uiautomator2) via a bundled Python helper. No root required.
+Multi-touch (pinch, tilt, rotate) and long-press use [uiautomator2](https://github.com/openatx/uiautomator2) via a bundled Python helper. No root required.
 
 One-time setup:
 
@@ -38,7 +71,9 @@ One-time setup:
 ./tools/setup.sh
 ```
 
-This creates a local `.venv/` with uiautomator2 installed. The skill auto-runs setup if the venv is missing.
+This creates a local `.venv/` with uiautomator2 installed and initializes the ATX agent on the connected device. A device must be connected for this step.
+
+For multi-device setups, pass `--serial <serial>` (or `-s <serial>`) to `gesture_helper.py` to target a specific device.
 
 ## File Structure
 
@@ -46,7 +81,11 @@ This creates a local `.venv/` with uiautomator2 installed. The skill auto-runs s
 SKILL.md                  # Skill instructions (loaded by Claude Code)
 README.md                 # This file
 tools/
-  gesture_helper.py       # Multi-touch gesture CLI (pinch, tilt, rotate)
-  setup.sh                # One-time venv setup
+  screenshot.sh           # Screenshot capture + pull
+  logcat.sh               # PID-filtered logcat with safe fallback
+  ui_dump.sh              # UI hierarchy dump + pull
+  cleanup.sh              # Remove temp files (local + device)
+  gesture_helper.py       # Gesture CLI (pinch, tilt, rotate, long-press)
+  setup.sh                # One-time venv + ATX agent setup
   .venv/                  # Python venv (created by setup.sh, gitignored)
 ```
