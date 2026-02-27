@@ -35,7 +35,7 @@ adb shell am force-stop com.package.name
 
 **Logcat — always use the logcat wrapper for PID-filtered output:**
 ```bash
-# Dump recent logs (last 60s)
+# Dump recent logs (last 60 lines)
 "$SKILL_DIR/tools/logcat.sh" com.package.name -d
 
 # Stream for 15s (default)
@@ -162,9 +162,9 @@ Multi-touch gestures use `$SKILL_DIR/tools/gesture_helper.py` with a local Pytho
 - A device must be connected — `setup.sh` installs the ATX agent on the device.
 - For multi-device setups, pass `--serial <serial>` (or `-s <serial>`) to `gesture_helper.py`.
 
-**Ensure the venv exists** (runs setup if missing):
+**Ensure the venv exists** (idempotent — safe to re-run):
 ```bash
-[ -d "$SKILL_DIR/tools/.venv" ] || "$SKILL_DIR/tools/setup.sh"
+"$SKILL_DIR/tools/setup.sh"
 ```
 
 **Invoke gestures:**
@@ -186,9 +186,6 @@ Multi-touch gestures use `$SKILL_DIR/tools/gesture_helper.py` with a local Pytho
 
 # Rotate counter-clockwise
 "$SKILL_DIR/tools/.venv/bin/python3" "$SKILL_DIR/tools/gesture_helper.py" rotate_ccw <cx> <cy> --radius 200 --steps 30
-
-# Long press (single-touch, configurable duration)
-"$SKILL_DIR/tools/.venv/bin/python3" "$SKILL_DIR/tools/gesture_helper.py" long_press <cx> <cy> --duration 2000
 
 # Multi-device: pass --serial / -s
 "$SKILL_DIR/tools/.venv/bin/python3" "$SKILL_DIR/tools/gesture_helper.py" pinch_out <cx> <cy> -s <serial>
@@ -226,7 +223,6 @@ Add these to `~/.claude/settings.json` under `permissions.allow` to avoid repeat
     "Bash(*/skills/claude-adb-skill/tools/cleanup.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/gesture_helper.py *)",
     "Bash(*/skills/claude-adb-skill/tools/setup.sh*)",
-    "Bash([ -d *)",
     "Read(/tmp/*.png)",
     "Read(/tmp/ui_dump.xml)"
   ]

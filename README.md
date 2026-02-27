@@ -41,12 +41,35 @@ Add the following to your `~/.claude/settings.json`:
     "Bash(*/skills/claude-adb-skill/tools/cleanup.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/gesture_helper.py *)",
     "Bash(*/skills/claude-adb-skill/tools/setup.sh*)",
-    "Bash([ -d *)",
     "Read(/tmp/*.png)",
     "Read(/tmp/ui_dump.xml)"
   ]
 }
 ```
+
+**What each rule covers:**
+
+| Pattern | Purpose |
+|---|---|
+| `adb devices *` | Check connected devices |
+| `adb install *` | Install APKs |
+| `adb shell input *` | Tap, swipe, type text, key events |
+| `adb shell wm *` | Get screen resolution |
+| `adb shell getprop *` | Query device properties (model, OS version) |
+| `adb shell dumpsys *` | Inspect current activity |
+| `adb shell pm list *` | List installed packages |
+| `adb shell am *` | Launch activities, force-stop apps |
+| `adb push *` | Push files to device |
+| `*/screenshot.sh*` | Capture + pull screenshot (wraps `screencap` + `pull`) |
+| `*/logcat.sh *` | PID-filtered logcat with fallback (wraps `pidof` + `logcat`) |
+| `*/ui_dump.sh*` | Dump + pull UI hierarchy (wraps `uiautomator` + `pull`) |
+| `*/cleanup.sh*` | Remove temp files locally and on device |
+| `*/gesture_helper.py *` | Multi-touch gestures and long-press |
+| `*/setup.sh*` | One-time venv + ATX agent setup |
+| `Read(/tmp/*.png)` | View pulled screenshots |
+| `Read(/tmp/ui_dump.xml)` | View pulled UI hierarchy |
+
+**Intentionally excluded** (will always prompt): `adb uninstall`, `adb shell pm clear`, `adb shell rm`.
 
 ## What It Can Do
 
@@ -70,6 +93,7 @@ One-time setup:
 ```bash
 ./tools/setup.sh
 ```
+Run from the skill's root directory.
 
 This creates a local `.venv/` with uiautomator2 installed and initializes the ATX agent on the connected device. A device must be connected for this step.
 

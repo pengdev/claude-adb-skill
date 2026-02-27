@@ -16,25 +16,23 @@ set -euo pipefail
 
 OUTPUT="/tmp/device_screenshot.png"
 DELAY=0
-SERIAL_FLAG=""
+SERIAL=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -o|--output) OUTPUT="$2"; shift 2 ;;
     -d|--delay)  DELAY="$2";  shift 2 ;;
-    -s|--serial) SERIAL_FLAG="-s $2"; shift 2 ;;
+    -s|--serial) SERIAL=(-s "$2"); shift 2 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
 
 DEVICE_PATH="/sdcard/screenshot_tmp.png"
 
-if (( $(echo "$DELAY > 0" | bc -l) )); then
-  sleep "$DELAY"
-fi
+sleep "$DELAY"
 
-adb $SERIAL_FLAG shell screencap -p "$DEVICE_PATH"
-adb $SERIAL_FLAG pull "$DEVICE_PATH" "$OUTPUT"
-adb $SERIAL_FLAG shell rm -f "$DEVICE_PATH"
+adb "${SERIAL[@]+"${SERIAL[@]}"}" shell screencap -p "$DEVICE_PATH"
+adb "${SERIAL[@]+"${SERIAL[@]}"}" pull "$DEVICE_PATH" "$OUTPUT"
+adb "${SERIAL[@]+"${SERIAL[@]}"}" shell rm -f "$DEVICE_PATH"
 
 echo "$OUTPUT"

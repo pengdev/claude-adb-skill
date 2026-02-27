@@ -28,7 +28,18 @@ import argparse
 import sys
 import time
 
-import uiautomator2 as u2
+try:
+    import uiautomator2 as u2
+except ImportError:
+    print(
+        "Error: uiautomator2 is not installed.\n"
+        "Run the setup script first:\n"
+        "  $SKILL_DIR/tools/setup.sh\n"
+        "Then invoke this script via:\n"
+        "  $SKILL_DIR/tools/.venv/bin/python3 gesture_helper.py ...",
+        file=sys.stderr,
+    )
+    sys.exit(1)
 
 
 def connect(serial=None):
@@ -39,25 +50,25 @@ def connect(serial=None):
 
 
 def pinch_out(d, cx, cy, radius, steps, **_):
-    """Two fingers spread outward from near center."""
+    """Two fingers spread outward horizontally from near center."""
     offset = 30  # start close together
     d().gesture(
-        (cx - offset, cy - offset),
-        (cx + offset, cy + offset),
-        (cx - radius, cy - radius),
-        (cx + radius, cy + radius),
+        (cx - offset, cy),
+        (cx + offset, cy),
+        (cx - radius, cy),
+        (cx + radius, cy),
         steps=steps,
     )
 
 
 def pinch_in(d, cx, cy, radius, steps, **_):
-    """Two fingers move inward toward center."""
+    """Two fingers move inward horizontally toward center."""
     offset = 30
     d().gesture(
-        (cx - radius, cy - radius),
-        (cx + radius, cy + radius),
-        (cx - offset, cy - offset),
-        (cx + offset, cy + offset),
+        (cx - radius, cy),
+        (cx + radius, cy),
+        (cx - offset, cy),
+        (cx + offset, cy),
         steps=steps,
     )
 
