@@ -71,6 +71,37 @@ Add the following to your `~/.claude/settings.json`:
 
 **Intentionally excluded** (will always prompt): `adb uninstall`, `adb shell pm clear`, `adb shell rm`.
 
+## Usage Examples
+
+Claude is a multimodal LLM — it can read screenshots to visually verify UI state, validate bug fixes against descriptions, and confirm layouts match design specs. Combined with ADB access, this means Claude can build, install, interact with, and visually inspect your app end-to-end.
+
+The skill is invoked automatically when you ask Claude Code to do anything with a connected Android device. You can also invoke it explicitly with `/adb`.
+
+**Validate a bug fix:**
+```
+/adb Build and install the app, open the cluster example, verify icons
+     render on the map, zoom in to check individual markers, and check
+     logcat for errors
+```
+
+**Visual bug verification:**
+```
+/adb The bug says the FAB overlaps the bottom sheet on small screens.
+     Take a screenshot and check if the layout looks correct after my fix
+```
+
+**Investigate a crash:**
+```
+/adb Launch com.example.app/.MainActivity, stream logcat while I
+     reproduce the crash, then analyze the stack trace
+```
+
+**Map gesture testing:**
+```
+/adb Open the map, pinch zoom in, tilt forward, rotate clockwise,
+     and take screenshots at each step
+```
+
 ## What It Can Do
 
 | Category | Examples |
