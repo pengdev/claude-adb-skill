@@ -75,31 +75,40 @@ Add the following to your `~/.claude/settings.json`:
 
 Claude is a multimodal LLM — it can read screenshots to visually verify UI state, validate bug fixes against descriptions, and confirm layouts match design specs. Combined with ADB access, this means Claude can build, install, interact with, and visually inspect your app end-to-end.
 
-The skill is invoked automatically when you ask Claude Code to do anything with a connected Android device. You can also invoke it explicitly with `/adb`.
+The skill activates automatically when Claude detects a connected Android device is relevant to your task — no special command needed. You can also invoke it explicitly with `/adb` to start a device-focused session.
 
-**Validate a bug fix:**
-```
-/adb Build and install the app, open the cluster example, verify icons
-     render on the map, zoom in to check individual markers, and check
-     logcat for errors
-```
+### Natural prompts (mid-session)
 
-**Visual bug verification:**
+These work when you're already in a coding session — just ask Claude to validate on device:
+
+**After fixing a bug:**
 ```
-/adb The bug says the FAB overlaps the bottom sheet on small screens.
-     Take a screenshot and check if the layout looks correct after my fix
+Try to validate the fix on device
 ```
 
-**Investigate a crash:**
+**After a layout change:**
 ```
-/adb Launch com.example.app/.MainActivity, stream logcat while I
-     reproduce the crash, then analyze the stack trace
+Build and install, then take a screenshot to check the layout looks right
 ```
+
+**Investigating a crash:**
+```
+Install the debug build and stream logcat while I reproduce the crash
+```
+
+### Explicit `/adb` invocations
+
+Use `/adb` when you want to start a standalone device interaction:
 
 **Map gesture testing:**
 ```
 /adb Open the map, pinch zoom in, tilt forward, rotate clockwise,
      and take screenshots at each step
+```
+
+**Device inspection:**
+```
+/adb Check what's running on the device and grab a screenshot
 ```
 
 ## What It Can Do
