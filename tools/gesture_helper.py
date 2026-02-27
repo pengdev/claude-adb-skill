@@ -2,7 +2,7 @@
 """Multi-touch gesture helper for Android devices via uiautomator2.
 
 Usage:
-    ~/.claude/skills/adb/tools/.venv/bin/python3 gesture_helper.py <gesture> [cx cy] [--radius R] [--steps N]
+    .venv/bin/python3 gesture_helper.py <gesture> [cx cy] [--radius R] [--steps N]
 
 Gestures:
     pinch_out   — two fingers spread outward (zoom in)
@@ -14,7 +14,7 @@ Gestures:
 
 If cx/cy are omitted, screen center is used.
 
-Setup: run ~/.claude/skills/adb/tools/setup.sh once to create the venv.
+Setup: run setup.sh once to create the venv.
 """
 
 import argparse

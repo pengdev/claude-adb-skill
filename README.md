@@ -7,7 +7,7 @@ A [Claude Code skill](https://docs.anthropic.com/en/docs/claude-code/skills) tha
 Clone this repo into your Claude Code skills directory:
 
 ```bash
-git clone <repo-url> ~/.claude/skills/adb
+git clone https://github.com/pengdev/claude-adb-skill.git ~/.claude/skills/claude-adb-skill
 ```
 
 ## Requirements
