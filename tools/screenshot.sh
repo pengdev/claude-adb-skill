@@ -20,9 +20,15 @@ SERIAL=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -o|--output) OUTPUT="$2"; shift 2 ;;
-    -d|--delay)  DELAY="$2";  shift 2 ;;
-    -s|--serial) SERIAL=(-s "$2"); shift 2 ;;
+    -o|--output)
+      [[ $# -lt 2 ]] && { echo "Error: --output requires a value" >&2; exit 1; }
+      OUTPUT="$2"; shift 2 ;;
+    -d|--delay)
+      [[ $# -lt 2 ]] && { echo "Error: --delay requires a value" >&2; exit 1; }
+      DELAY="$2"; shift 2 ;;
+    -s|--serial)
+      [[ $# -lt 2 ]] && { echo "Error: --serial requires a value" >&2; exit 1; }
+      SERIAL=(-s "$2"); shift 2 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done

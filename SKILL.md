@@ -12,25 +12,32 @@ You help the user operate on connected Android devices via `adb`.
 
 ## Before Running Commands
 
-- Run `adb devices -l` to confirm a device is connected.
-- If multiple devices are connected, ask which one and use `adb -s <serial>`.
+- Run `"$SKILL_DIR/tools/device_info.sh" list` to confirm a device is connected.
+- If multiple devices are connected, ask which one and pass `-s <serial>` to ALL tool scripts and raw `adb` commands consistently throughout the session.
 
 ## Common Operations
 
 **Device info:**
 ```bash
-adb devices -l
-adb shell wm size
-adb shell getprop ro.build.version.release
-adb shell getprop ro.product.model
+"$SKILL_DIR/tools/device_info.sh" list
+"$SKILL_DIR/tools/device_info.sh" size
+"$SKILL_DIR/tools/device_info.sh" version
+"$SKILL_DIR/tools/device_info.sh" model
+
+# Multi-device:
+"$SKILL_DIR/tools/device_info.sh" -s <serial> size
 ```
 
 **Install and launch apps:**
 ```bash
-adb install -r path/to/app.apk
+"$SKILL_DIR/tools/app.sh" install path/to/app.apk
 adb uninstall com.package.name
-adb shell am start -n com.package.name/.ActivityName
-adb shell am force-stop com.package.name
+"$SKILL_DIR/tools/app.sh" start com.package.name/.ActivityName
+"$SKILL_DIR/tools/app.sh" stop com.package.name
+
+# Multi-device:
+"$SKILL_DIR/tools/app.sh" -s <serial> install path/to/app.apk
+"$SKILL_DIR/tools/app.sh" -s <serial> start com.package.name/.ActivityName
 ```
 
 **Logcat — always use the logcat wrapper for PID-filtered output:**
@@ -54,15 +61,18 @@ The script handles PID lookup and fallback automatically. When streaming live lo
 
 **Files:**
 ```bash
-adb pull /sdcard/path/on/device local_path
-adb push local_path /sdcard/path/on/device
+"$SKILL_DIR/tools/file.sh" pull /sdcard/path/on/device local_path
+"$SKILL_DIR/tools/file.sh" push local_path /sdcard/path/on/device
+
+# Multi-device:
+"$SKILL_DIR/tools/file.sh" -s <serial> pull /sdcard/path/on/device local_path
 ```
 
 **App data:**
 ```bash
 adb shell pm clear com.package.name
-adb shell pm list packages | grep mapbox
-adb shell dumpsys activity top
+"$SKILL_DIR/tools/app.sh" list mapbox
+"$SKILL_DIR/tools/device_info.sh" top    # returns first 100 lines; use raw adb for full output
 ```
 
 ## Build & Deploy
@@ -75,7 +85,7 @@ When validating code changes on a device, build the APK before installing:
 ./gradlew <module>:assembleDebug
 
 # The APK is at: <module>/build/outputs/apk/debug/<module>-debug.apk
-adb install -r <module>/build/outputs/apk/debug/<module>-debug.apk
+"$SKILL_DIR/tools/app.sh" install <module>/build/outputs/apk/debug/<module>-debug.apk
 ```
 
 For multi-module projects, identify the app module (often `app/`) and build that.
@@ -100,7 +110,7 @@ This prevents overwriting and makes it easy to compare before/after states.
 1. Take a screenshot: `"$SKILL_DIR/tools/screenshot.sh" -o /tmp/before_tap.png`
 2. Read the screenshot with the Read tool to identify layout and coordinates
 3. If coordinates are ambiguous, dump the UI hierarchy for exact bounds (see below)
-4. Tap with `adb shell input tap <x> <y>`
+4. Tap with `"$SKILL_DIR/tools/input.sh" tap <x> <y>`
 5. Confirm the result: `"$SKILL_DIR/tools/screenshot.sh" -o /tmp/after_tap.png`
 
 **UI hierarchy — get exact element bounds when visual estimation is uncertain:**
@@ -111,24 +121,36 @@ Then Read `/tmp/ui_dump.xml` to find elements by text, resource-id, or class. Ea
 
 **Input commands:**
 ```bash
-adb shell input tap <x> <y>
-adb shell input swipe <x1> <y1> <x2> <y2> <duration_ms>
-adb shell input text "hello"
-adb shell input keyevent KEYCODE_BACK
-adb shell input keyevent KEYCODE_HOME
-adb shell input keyevent KEYCODE_ENTER
+"$SKILL_DIR/tools/input.sh" tap <x> <y>
+"$SKILL_DIR/tools/input.sh" swipe <x1> <y1> <x2> <y2> <duration_ms>
+"$SKILL_DIR/tools/input.sh" text "hello"
+"$SKILL_DIR/tools/input.sh" keyevent KEYCODE_BACK
+"$SKILL_DIR/tools/input.sh" keyevent KEYCODE_HOME
+"$SKILL_DIR/tools/input.sh" keyevent KEYCODE_ENTER
+
+# Wait before input (e.g. after animation):
+"$SKILL_DIR/tools/input.sh" -d 1 tap <x> <y>
+
+# Multi-device:
+"$SKILL_DIR/tools/input.sh" -s <serial> tap <x> <y>
+"$SKILL_DIR/tools/input.sh" -d 1 -s <serial> tap <x> <y>
+"$SKILL_DIR/tools/input.sh" -s <serial> -d 1 tap <x> <y>  # -d/-s order is flexible
 ```
 
 **Cleanup:** After a task is complete, always clean up screenshots and temp files:
 ```bash
+# Single device:
 "$SKILL_DIR/tools/cleanup.sh"
+
+# Multi-device:
+"$SKILL_DIR/tools/cleanup.sh" -s <serial>
 ```
 
 ## Map Gestures
 
 ### Before Any Gesture
 
-1. Run `adb shell wm size` to get screen resolution
+1. Run `"$SKILL_DIR/tools/device_info.sh" size` to get screen resolution
 2. Take a screenshot (`"$SKILL_DIR/tools/screenshot.sh"`) and read it to identify the map area vs UI overlays (toolbars, FABs, bottom bars)
 3. Compute the map center coordinates — target all gestures within the map area only
 
@@ -136,7 +158,7 @@ adb shell input keyevent KEYCODE_ENTER
 
 **Double tap to zoom in:**
 ```bash
-adb shell input tap <cx> <cy> && sleep 0.08 && adb shell input tap <cx> <cy>
+"$SKILL_DIR/tools/input.sh" tap <cx> <cy> && sleep 0.08 && "$SKILL_DIR/tools/input.sh" tap <cx> <cy>
 ```
 
 **Long press** (e.g. to select a map point, drop a pin):
@@ -146,10 +168,10 @@ adb shell input tap <cx> <cy> && sleep 0.08 && adb shell input tap <cx> <cy>
 
 **Pan map:**
 ```bash
-adb shell input swipe <cx> <cy> <cx> $((cy-300)) 300   # Pan up
-adb shell input swipe <cx> <cy> <cx> $((cy+300)) 300   # Pan down
-adb shell input swipe <cx> <cy> $((cx-300)) <cy> 300    # Pan left
-adb shell input swipe <cx> <cy> $((cx+300)) <cy> 300    # Pan right
+"$SKILL_DIR/tools/input.sh" swipe <cx> <cy> <cx> $((cy-300)) 300   # Pan up
+"$SKILL_DIR/tools/input.sh" swipe <cx> <cy> <cx> $((cy+300)) 300   # Pan down
+"$SKILL_DIR/tools/input.sh" swipe <cx> <cy> $((cx-300)) <cy> 300    # Pan left
+"$SKILL_DIR/tools/input.sh" swipe <cx> <cy> $((cx+300)) <cy> 300    # Pan right
 ```
 
 > **Note:** There is no single-touch zoom-out gesture. To zoom out, use `pinch_in` (multi-touch) below.
@@ -160,6 +182,7 @@ Multi-touch gestures use `$SKILL_DIR/tools/gesture_helper.py` with a local Pytho
 
 **Setup prerequisites:**
 - A device must be connected — `setup.sh` installs the ATX agent on the device.
+- If the venv becomes stale (e.g. after a Python upgrade), `setup.sh` auto-detects and recreates it.
 - For multi-device setups, pass `--serial <serial>` (or `-s <serial>`) to `gesture_helper.py`.
 
 **Ensure the venv exists** (idempotent — safe to re-run):
@@ -196,33 +219,29 @@ If `cx`/`cy` are omitted, screen center is used. Adjust `--radius` for gesture m
 ## Tips
 
 - When `INSTALL_FAILED_UPDATE_INCOMPATIBLE` occurs, uninstall the existing app first.
-- Use `adb shell am start -n` with the fully qualified component name to launch exported activities.
+- Use `"$SKILL_DIR/tools/app.sh" start` with the fully qualified component name to launch exported activities.
 - Parse and summarize logcat output — don't dump raw logs without explanation.
 - Always take a screenshot before UI interaction to see the current state.
 - For map gesture coordinates, compute actual pixel values from screen size and screenshot — don't hardcode.
+- When using a specific device, pass `-s <serial>` to ALL tool scripts and raw `adb` commands consistently throughout the session.
 
 ## Recommended Permissions
 
-Add these to `~/.claude/settings.json` under `permissions.allow` to avoid repeated prompts for standard operations. Dangerous commands (`adb uninstall`, `adb shell pm clear`) are intentionally excluded and will always prompt.
+Add these to `~/.claude/settings.json` under `permissions.allow` to avoid repeated prompts for standard operations. Dangerous commands (`adb uninstall`, `adb shell pm clear`, `adb shell rm`) are intentionally excluded and will always prompt. Note: the `logcat.sh` and `gesture_helper.py` patterns have a trailing space before `*` to enforce their required first argument.
 
 ```json
 "permissions": {
   "allow": [
-    "Bash(adb devices *)",
-    "Bash(adb install *)",
-    "Bash(adb shell input *)",
-    "Bash(adb shell wm *)",
-    "Bash(adb shell getprop *)",
-    "Bash(adb shell dumpsys *)",
-    "Bash(adb shell pm list *)",
-    "Bash(adb shell am *)",
-    "Bash(adb push *)",
     "Bash(*/skills/claude-adb-skill/tools/screenshot.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/logcat.sh *)",
     "Bash(*/skills/claude-adb-skill/tools/ui_dump.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/cleanup.sh*)",
-    "Bash(*/skills/claude-adb-skill/tools/gesture_helper.py *)",
     "Bash(*/skills/claude-adb-skill/tools/setup.sh*)",
+    "Bash(*/skills/claude-adb-skill/tools/gesture_helper.py *)",
+    "Bash(*/skills/claude-adb-skill/tools/input.sh*)",
+    "Bash(*/skills/claude-adb-skill/tools/app.sh*)",
+    "Bash(*/skills/claude-adb-skill/tools/device_info.sh*)",
+    "Bash(*/skills/claude-adb-skill/tools/file.sh*)",
     "Read(/tmp/*.png)",
     "Read(/tmp/ui_dump.xml)"
   ]

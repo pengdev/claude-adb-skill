@@ -14,13 +14,21 @@ SERIAL_ARGS=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -s|--serial) SERIAL_ARGS=(--serial "$2"); shift 2 ;;
+    -s|--serial)
+      [[ $# -lt 2 ]] && { echo "Error: --serial requires a value" >&2; exit 1; }
+      SERIAL_ARGS=(--serial "$2"); shift 2 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
 
 if [ -d "$VENV_DIR" ]; then
-    echo "venv already exists at $VENV_DIR"
+    if ! "$VENV_DIR/bin/python3" -c "import uiautomator2" 2>/dev/null; then
+        echo "Existing venv is missing uiautomator2, recreating..."
+        rm -rf "$VENV_DIR"
+        python3 -m venv "$VENV_DIR"
+    else
+        echo "venv already exists at $VENV_DIR"
+    fi
 else
     echo "Creating venv at $VENV_DIR ..."
     python3 -m venv "$VENV_DIR"
@@ -31,4 +39,4 @@ echo "Installing uiautomator2 ..."
 
 echo "Initializing ATX agent on connected device ..."
 "$VENV_DIR/bin/uiautomator2" init "${SERIAL_ARGS[@]+"${SERIAL_ARGS[@]}"}"
-echo "Done. gesture_helper.py is ready to use."
+echo "Done. Multi-touch gestures and long-press are ready (gesture_helper.py)."

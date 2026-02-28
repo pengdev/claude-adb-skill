@@ -18,7 +18,9 @@ EXTRA_FILES=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -s|--serial) SERIAL=(-s "$2"); shift 2 ;;
+    -s|--serial)
+      [[ $# -lt 2 ]] && { echo "Error: --serial requires a value" >&2; exit 1; }
+      SERIAL=(-s "$2"); shift 2 ;;
     *) EXTRA_FILES+=("$1"); shift ;;
   esac
 done

@@ -28,10 +28,16 @@ SERIAL=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -d|--dump)     DUMP=true;       shift ;;
-    -t|--duration) DURATION="$2";   shift 2 ;;
+    -t|--duration)
+      [[ $# -lt 2 ]] && { echo "Error: --duration requires a value" >&2; exit 1; }
+      DURATION="$2"; shift 2 ;;
     -c|--clear)    CLEAR=true;      shift ;;
-    --tags)        TAGS="$2";       shift 2 ;;
-    -s|--serial)   SERIAL=(-s "$2"); shift 2 ;;
+    --tags)
+      [[ $# -lt 2 ]] && { echo "Error: --tags requires a value" >&2; exit 1; }
+      TAGS="$2"; shift 2 ;;
+    -s|--serial)
+      [[ $# -lt 2 ]] && { echo "Error: --serial requires a value" >&2; exit 1; }
+      SERIAL=(-s "$2"); shift 2 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done

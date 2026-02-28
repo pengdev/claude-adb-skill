@@ -19,28 +19,23 @@ git clone https://github.com/pengdev/claude-adb-skill.git ~/.claude/skills/claud
 
 ## Permissions
 
-Adding permission rules to `~/.claude/settings.json` avoids repeated prompts during adb operations. Dangerous commands like `adb uninstall` and `adb shell pm clear` are intentionally excluded and will always prompt for confirmation.
+Adding permission rules to `~/.claude/settings.json` avoids repeated prompts during adb operations. All standard adb access goes through wrapper scripts — dangerous commands like `adb uninstall`, `adb shell pm clear`, and `adb shell rm` are intentionally not wrapped and will always prompt for confirmation.
 
 Add the following to your `~/.claude/settings.json`:
 
 ```json
 "permissions": {
   "allow": [
-    "Bash(adb devices *)",
-    "Bash(adb install *)",
-    "Bash(adb shell input *)",
-    "Bash(adb shell wm *)",
-    "Bash(adb shell getprop *)",
-    "Bash(adb shell dumpsys *)",
-    "Bash(adb shell pm list *)",
-    "Bash(adb shell am *)",
-    "Bash(adb push *)",
     "Bash(*/skills/claude-adb-skill/tools/screenshot.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/logcat.sh *)",
     "Bash(*/skills/claude-adb-skill/tools/ui_dump.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/cleanup.sh*)",
-    "Bash(*/skills/claude-adb-skill/tools/gesture_helper.py *)",
     "Bash(*/skills/claude-adb-skill/tools/setup.sh*)",
+    "Bash(*/skills/claude-adb-skill/tools/gesture_helper.py *)",
+    "Bash(*/skills/claude-adb-skill/tools/input.sh*)",
+    "Bash(*/skills/claude-adb-skill/tools/app.sh*)",
+    "Bash(*/skills/claude-adb-skill/tools/device_info.sh*)",
+    "Bash(*/skills/claude-adb-skill/tools/file.sh*)",
     "Read(/tmp/*.png)",
     "Read(/tmp/ui_dump.xml)"
   ]
@@ -51,21 +46,16 @@ Add the following to your `~/.claude/settings.json`:
 
 | Pattern | Purpose |
 |---|---|
-| `adb devices *` | Check connected devices |
-| `adb install *` | Install APKs |
-| `adb shell input *` | Tap, swipe, type text, key events |
-| `adb shell wm *` | Get screen resolution |
-| `adb shell getprop *` | Query device properties (model, OS version) |
-| `adb shell dumpsys *` | Inspect current activity |
-| `adb shell pm list *` | List installed packages |
-| `adb shell am *` | Launch activities, force-stop apps |
-| `adb push *` | Push files to device |
 | `*/screenshot.sh*` | Capture + pull screenshot (wraps `screencap` + `pull`) |
-| `*/logcat.sh *` | PID-filtered logcat with fallback (wraps `pidof` + `logcat`) |
+| `*/logcat.sh *` | PID-filtered logcat with fallback — note trailing space enforces required package arg |
 | `*/ui_dump.sh*` | Dump + pull UI hierarchy (wraps `uiautomator` + `pull`) |
 | `*/cleanup.sh*` | Remove temp files locally and on device |
-| `*/gesture_helper.py *` | Multi-touch gestures and long-press |
 | `*/setup.sh*` | One-time venv + ATX agent setup |
+| `*/gesture_helper.py *` | Multi-touch gestures and long-press — trailing space enforces required gesture arg |
+| `*/input.sh*` | Tap, swipe, type text, key events (wraps `adb shell input`) |
+| `*/app.sh*` | Install APKs, launch/stop apps, list packages (wraps `am` + `install` + `pm list`) |
+| `*/device_info.sh*` | List devices, screen size, model, OS version, top activity |
+| `*/file.sh*` | Pull/push files between host and device |
 | `Read(/tmp/*.png)` | View pulled screenshots |
 | `Read(/tmp/ui_dump.xml)` | View pulled UI hierarchy |
 
@@ -116,12 +106,12 @@ Use `/adb` when you want to start a standalone device interaction:
 | Category | Examples |
 |---|---|
 | **Device management** | List devices, get device info, screen resolution |
-| **App lifecycle** | Install/uninstall APKs, launch activities, force-stop |
+| **App lifecycle** | Install APKs, launch/stop apps, list packages (via `app.sh`) |
 | **Build & deploy** | Build debug APK with Gradle, install on device |
 | **Logcat** | PID-filtered log capture, live streaming with timeout, safe fallback when PID unavailable |
-| **Files** | Push/pull files to/from device |
+| **Files** | Push/pull files to/from device (via `file.sh`) |
 | **Screenshots** | Capture screen, view it visually, identify UI elements |
-| **UI interaction** | Tap, swipe, long-press, type text, key events, UI hierarchy dump |
+| **UI interaction** | Tap, swipe, long-press, type text, key events (via `input.sh`), UI hierarchy dump |
 | **Map gestures** | Pan, double-tap zoom, pinch zoom in/out, tilt, rotate |
 
 ## Multi-Touch Gestures
@@ -135,7 +125,7 @@ One-time setup:
 ```
 Run from the skill's root directory.
 
-This creates a local `.venv/` with uiautomator2 installed and initializes the ATX agent on the connected device. A device must be connected for this step.
+This creates a local `.venv/` with uiautomator2 installed and initializes the ATX agent on the connected device. A device must be connected for this step. If the venv becomes stale (e.g. after a Python version upgrade), `setup.sh` auto-detects and recreates the venv.
 
 For multi-device setups, pass `--serial <serial>` (or `-s <serial>`) to `gesture_helper.py` to target a specific device.
 
@@ -149,6 +139,10 @@ tools/
   logcat.sh               # PID-filtered logcat with safe fallback
   ui_dump.sh              # UI hierarchy dump + pull
   cleanup.sh              # Remove temp files (local + device)
+  input.sh                # Input wrapper (tap, swipe, text, keyevent)
+  app.sh                  # App lifecycle wrapper (start, stop, install, list)
+  device_info.sh          # Device query wrapper (list, size, version, model, top)
+  file.sh                 # File transfer wrapper (pull, push)
   gesture_helper.py       # Gesture CLI (pinch, tilt, rotate, long-press)
   setup.sh                # One-time venv + ATX agent setup
   .venv/                  # Python venv (created by setup.sh, gitignored)
