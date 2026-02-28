@@ -34,6 +34,8 @@ else
     python3 -m venv "$VENV_DIR"
 fi
 
+# Installs uiautomator2 (which transitively pulls in Pillow).
+# find_colors.py depends on Pillow for image analysis.
 echo "Installing uiautomator2 ..."
 "$VENV_DIR/bin/pip" install --quiet uiautomator2
 

@@ -32,6 +32,7 @@ Add the following to your `~/.claude/settings.json`:
     "Bash(*/skills/claude-adb-skill/tools/cleanup.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/setup.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/gesture_helper.py *)",
+    "Bash(*/skills/claude-adb-skill/tools/find_colors.py *)",
     "Bash(*/skills/claude-adb-skill/tools/input.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/app.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/device_info.sh*)",
@@ -52,6 +53,7 @@ Add the following to your `~/.claude/settings.json`:
 | `*/cleanup.sh*` | Remove temp files locally and on device |
 | `*/setup.sh*` | One-time venv + ATX agent setup |
 | `*/gesture_helper.py *` | Multi-touch gestures and long-press — trailing space enforces required gesture arg |
+| `*/find_colors.py *` | Color-based element finder — trailing space enforces required image arg |
 | `*/input.sh*` | Tap, swipe, type text, key events (wraps `adb shell input`) |
 | `*/app.sh*` | Install APKs, launch/stop apps, list packages (wraps `am` + `install` + `pm list`) |
 | `*/device_info.sh*` | List devices, screen size, model, OS version, top activity |
@@ -110,8 +112,9 @@ Use `/adb` when you want to start a standalone device interaction:
 | **Build & deploy** | Build debug APK with Gradle, install on device |
 | **Logcat** | PID-filtered log capture, live streaming with timeout, safe fallback when PID unavailable |
 | **Files** | Push/pull files to/from device (via `file.sh`) |
-| **Screenshots** | Capture screen, view it visually, identify UI elements |
+| **Screenshots** | Capture screen with dimensions, view it visually, identify UI elements |
 | **UI interaction** | Tap, swipe, long-press, type text, key events (via `input.sh`), UI hierarchy dump |
+| **Coordinate precision** | Find colored elements by pixel color (`find_colors.py`), image-to-device coordinate scaling |
 | **Map gestures** | Pan, double-tap zoom, pinch zoom in/out, tilt, rotate |
 
 ## Multi-Touch Gestures
@@ -144,6 +147,7 @@ tools/
   device_info.sh          # Device query wrapper (list, size, version, model, top)
   file.sh                 # File transfer wrapper (pull, push)
   gesture_helper.py       # Gesture CLI (pinch, tilt, rotate, long-press)
+  find_colors.py          # Color-based element finder (uses Pillow)
   setup.sh                # One-time venv + ATX agent setup
   .venv/                  # Python venv (created by setup.sh, gitignored)
 ```

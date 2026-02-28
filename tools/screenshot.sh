@@ -41,4 +41,11 @@ adb "${SERIAL[@]+"${SERIAL[@]}"}" shell screencap -p "$DEVICE_PATH"
 adb "${SERIAL[@]+"${SERIAL[@]}"}" pull "$DEVICE_PATH" "$OUTPUT"
 adb "${SERIAL[@]+"${SERIAL[@]}"}" shell rm -f "$DEVICE_PATH"
 
-echo "$OUTPUT"
+DIMENSIONS=$(python3 -c "
+import struct, sys
+with open(sys.argv[1], 'rb') as f:
+    f.read(16)
+    w, h = struct.unpack('>II', f.read(8))
+    print(f'{w}x{h}')
+" "$OUTPUT" 2>/dev/null) || DIMENSIONS="unknown"
+echo "$OUTPUT $DIMENSIONS"

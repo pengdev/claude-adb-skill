@@ -146,6 +146,49 @@ Then Read `/tmp/ui_dump.xml` to find elements by text, resource-id, or class. Ea
 "$SKILL_DIR/tools/cleanup.sh" -s <serial>
 ```
 
+## Coordinate Precision
+
+**The problem:** The Read tool may display screenshots at different resolution than the original device capture. Visually estimating pixel coordinates from a resized image introduces systematic offset errors that compound with repeated gestures (especially double-tap zoom, which re-centers on the tap point).
+
+**Coordinate calculation workflow:**
+1. Get device screen size: `"$SKILL_DIR/tools/device_info.sh" size` → e.g., `1080x2400`
+2. Take screenshot — note the reported `WxH` from output: `"$SKILL_DIR/tools/screenshot.sh"` → `/tmp/device_screenshot.png 2960x1848`
+3. Get UI container bounds: `"$SKILL_DIR/tools/ui_dump.sh"` → find the MapView bounds `[L,T][R,B]` in `/tmp/ui_dump.xml`
+4. Locate the target:
+   - **For colored elements** (markers, clusters, icons): use `find_colors.py` (see below)
+   - **For UI elements**: use bounds from `ui_dump.xml`
+   - **For estimated positions**: express as a fraction of the container, then multiply by device dimensions
+5. Convert image coordinates to device coordinates:
+   ```
+   scale_x = device_width / image_width
+   scale_y = device_height / image_height
+   device_x = image_x * scale_x
+   device_y = image_y * scale_y
+   ```
+
+**Finding map elements by color:**
+
+`find_colors.py` locates clusters of specific colors in screenshots and returns their center coordinates in image space.
+
+```bash
+# Find red markers
+"$SKILL_DIR/tools/.venv/bin/python3" "$SKILL_DIR/tools/find_colors.py" /tmp/screenshot.png red
+
+# Find green clusters with custom tolerance
+"$SKILL_DIR/tools/.venv/bin/python3" "$SKILL_DIR/tools/find_colors.py" /tmp/screenshot.png green --tolerance 80
+
+# Restrict search to the MapView area (skip toolbar/nav bar)
+"$SKILL_DIR/tools/.venv/bin/python3" "$SKILL_DIR/tools/find_colors.py" /tmp/screenshot.png red --bounds 0,120,2960,1848
+
+# Custom RGB color
+"$SKILL_DIR/tools/.venv/bin/python3" "$SKILL_DIR/tools/find_colors.py" /tmp/screenshot.png --rgb 51,102,255
+
+# JSON output for programmatic use
+"$SKILL_DIR/tools/.venv/bin/python3" "$SKILL_DIR/tools/find_colors.py" /tmp/screenshot.png red --json
+```
+
+Available named colors: `red`, `green`, `blue`, `yellow`, `orange`, `white`, `black`, `cyan`, `magenta`. Named colors are approximate — if a named color misses visible elements, use `--rgb R,G,B` to target the exact shade, or increase `--tolerance`. Default tolerance is 70; lower for stricter matching, higher (80-100) for broader matching. Use `--min-size` (default 10) to filter out noise.
+
 ## Map Gestures
 
 ### Before Any Gesture
@@ -153,6 +196,12 @@ Then Read `/tmp/ui_dump.xml` to find elements by text, resource-id, or class. Ea
 1. Run `"$SKILL_DIR/tools/device_info.sh" size` to get screen resolution
 2. Take a screenshot (`"$SKILL_DIR/tools/screenshot.sh"`) and read it to identify the map area vs UI overlays (toolbars, FABs, bottom bars)
 3. Compute the map center coordinates — target all gestures within the map area only
+
+### Iterative Zoom and Re-identification
+
+- After each zoom gesture, ALWAYS re-screenshot and re-identify the target before the next gesture. Never chain multiple zooms without re-screenshotting.
+- Double-tap zoom centers on the tap point — coordinate offset errors compound exponentially with each zoom.
+- For precise targeting: zoom to the general area (2–3 steps with re-screenshot between each), then use `find_colors.py` or `ui_dump.sh` for exact coordinates of the shifted target.
 
 ### Single-Touch Gestures (reliable)
 
@@ -227,7 +276,7 @@ If `cx`/`cy` are omitted, screen center is used. Adjust `--radius` for gesture m
 
 ## Recommended Permissions
 
-Add these to `~/.claude/settings.json` under `permissions.allow` to avoid repeated prompts for standard operations. Dangerous commands (`adb uninstall`, `adb shell pm clear`, `adb shell rm`) are intentionally excluded and will always prompt. Note: the `logcat.sh` and `gesture_helper.py` patterns have a trailing space before `*` to enforce their required first argument.
+Add these to `~/.claude/settings.json` under `permissions.allow` to avoid repeated prompts for standard operations. Dangerous commands (`adb uninstall`, `adb shell pm clear`, `adb shell rm`) are intentionally excluded and will always prompt. Note: the `logcat.sh`, `gesture_helper.py`, and `find_colors.py` patterns have a trailing space before `*` to enforce their required first argument.
 
 ```json
 "permissions": {
@@ -238,6 +287,7 @@ Add these to `~/.claude/settings.json` under `permissions.allow` to avoid repeat
     "Bash(*/skills/claude-adb-skill/tools/cleanup.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/setup.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/gesture_helper.py *)",
+    "Bash(*/skills/claude-adb-skill/tools/find_colors.py *)",
     "Bash(*/skills/claude-adb-skill/tools/input.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/app.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/device_info.sh*)",
