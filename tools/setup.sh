@@ -22,8 +22,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [ -d "$VENV_DIR" ]; then
-    if ! "$VENV_DIR/bin/python3" -c "import uiautomator2" 2>/dev/null; then
-        echo "Existing venv is missing uiautomator2, recreating..."
+    if ! "$VENV_DIR/bin/python3" -c "import uiautomator2; import PIL" 2>/dev/null; then
+        echo "Existing venv is missing uiautomator2 or Pillow, recreating..."
         rm -rf "$VENV_DIR"
         python3 -m venv "$VENV_DIR"
     else
@@ -34,10 +34,11 @@ else
     python3 -m venv "$VENV_DIR"
 fi
 
-# Installs uiautomator2 (which transitively pulls in Pillow).
 # find_colors.py depends on Pillow for image analysis.
-echo "Installing uiautomator2 ..."
-"$VENV_DIR/bin/pip" install --quiet uiautomator2
+# Pillow is also a transitive dep of uiautomator2, but we install it
+# explicitly to avoid breakage if uiautomator2 ever drops it.
+echo "Installing uiautomator2 and Pillow ..."
+"$VENV_DIR/bin/pip" install --quiet uiautomator2 Pillow
 
 echo "Initializing ATX agent on connected device ..."
 "$VENV_DIR/bin/uiautomator2" init "${SERIAL_ARGS[@]+"${SERIAL_ARGS[@]}"}"

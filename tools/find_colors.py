@@ -18,14 +18,13 @@ Options:
     --min-size N        Min pixel cluster size to report (default: 10)
     --json              Output JSON instead of human-readable
 
-Setup: run setup.sh once to create the venv (Pillow is a transitive dep of
-uiautomator2).
+Setup: run setup.sh once to create the venv (Pillow and NumPy are installed
+as dependencies of uiautomator2).
 """
 
 import argparse
 import collections
 import json
-import math
 import sys
 
 try:
@@ -41,6 +40,12 @@ except ImportError:
     )
     sys.exit(1)
 
+try:
+    import numpy as np
+    _HAS_NUMPY = True
+except ImportError:
+    _HAS_NUMPY = False
+
 NAMED_COLORS = {
     "red": (255, 0, 0),
     "green": (0, 210, 0),
@@ -54,9 +59,31 @@ NAMED_COLORS = {
 }
 
 
-def color_distance(c1, c2):
-    """Euclidean distance between two RGB tuples."""
-    return math.sqrt(sum((a - b) ** 2 for a, b in zip(c1, c2)))
+def _find_matching_numpy(img, target_rgb, tolerance, left, top, right, bottom):
+    """Fast pixel matching using NumPy vectorized operations."""
+    region = img.crop((left, top, right, bottom))
+    arr = np.array(region, dtype=np.int32)
+    tr = np.array(target_rgb, dtype=np.int32)
+    diff = arr - tr
+    dist_sq = (diff ** 2).sum(axis=2)
+    mask = dist_sq <= tolerance * tolerance
+    ys, xs = np.where(mask)
+    return set(zip((xs + left).tolist(), (ys + top).tolist()))
+
+
+def _find_matching_python(img, target_rgb, tolerance, left, top, right, bottom):
+    """Pure-Python fallback pixel matching using squared distance."""
+    tol_sq = tolerance * tolerance
+    tr, tg, tb = target_rgb
+    pixels = img.load()
+    matching = set()
+    for y in range(top, bottom):
+        for x in range(left, right):
+            r, g, b = pixels[x, y]
+            d_sq = (r - tr) ** 2 + (g - tg) ** 2 + (b - tb) ** 2
+            if d_sq <= tol_sq:
+                matching.add((x, y))
+    return matching
 
 
 def find_matching_pixels(img, target_rgb, tolerance, bounds):
@@ -68,16 +95,9 @@ def find_matching_pixels(img, target_rgb, tolerance, bounds):
     right = min(w, right)
     bottom = min(h, bottom)
 
-    pixels = img.load()
-    matching = set()
-    for y in range(top, bottom):
-        for x in range(left, right):
-            px = pixels[x, y]
-            # Handle RGBA by taking first 3 channels
-            rgb = px[:3] if len(px) >= 3 else px
-            if color_distance(rgb, target_rgb) <= tolerance:
-                matching.add((x, y))
-    return matching
+    if _HAS_NUMPY:
+        return _find_matching_numpy(img, target_rgb, tolerance, left, top, right, bottom)
+    return _find_matching_python(img, target_rgb, tolerance, left, top, right, bottom)
 
 
 def cluster_pixels(matching):
@@ -108,10 +128,13 @@ def cluster_pixels(matching):
 
 def cluster_info(cluster):
     """Compute center, bounding box, and pixel count for a cluster."""
-    xs = [p[0] for p in cluster]
-    ys = [p[1] for p in cluster]
-    min_x, max_x = min(xs), max(xs)
-    min_y, max_y = min(ys), max(ys)
+    min_x = min_y = float('inf')
+    max_x = max_y = float('-inf')
+    for x, y in cluster:
+        if x < min_x: min_x = x
+        if x > max_x: max_x = x
+        if y < min_y: min_y = y
+        if y > max_y: max_y = y
     cx = (min_x + max_x) // 2
     cy = (min_y + max_y) // 2
     return {
@@ -166,14 +189,18 @@ def main():
     )
     args = parser.parse_args()
 
+    if args.tolerance < 0:
+        print("Error: --tolerance must be >= 0", file=sys.stderr)
+        sys.exit(1)
+
     if args.rgb:
         try:
             parts = [int(x.strip()) for x in args.rgb.split(",")]
-            if len(parts) != 3:
+            if len(parts) != 3 or not all(0 <= v <= 255 for v in parts):
                 raise ValueError
             target_rgb = tuple(parts)
         except ValueError:
-            print("Error: --rgb must be R,G,B (e.g., 255,0,0)", file=sys.stderr)
+            print("Error: --rgb must be R,G,B with values 0-255 (e.g., 255,0,0)", file=sys.stderr)
             sys.exit(1)
         color_label = f"rgb({args.rgb})"
     elif args.color:
@@ -188,10 +215,13 @@ def main():
         try:
             parts = [int(x.strip()) for x in args.bounds.split(",")]
             if len(parts) != 4:
-                raise ValueError
+                raise ValueError("expected 4 values")
+            left, top, right, bottom = parts
+            if right <= left or bottom <= top:
+                raise ValueError("right must be > left and bottom must be > top")
             bounds = tuple(parts)
-        except ValueError:
-            print("Error: --bounds must be L,T,R,B (e.g., 0,120,2960,1848)", file=sys.stderr)
+        except ValueError as e:
+            print(f"Error: --bounds must be L,T,R,B (e.g., 0,120,2960,1848): {e}", file=sys.stderr)
             sys.exit(1)
 
     try:
@@ -254,6 +284,8 @@ def main():
                     f"size={r['width']}x{r['height']} "
                     f"pixels={r['pixels']}"
                 )
+
+    sys.exit(0 if results else 1)
 
 
 if __name__ == "__main__":

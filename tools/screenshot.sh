@@ -41,11 +41,21 @@ adb "${SERIAL[@]+"${SERIAL[@]}"}" shell screencap -p "$DEVICE_PATH"
 adb "${SERIAL[@]+"${SERIAL[@]}"}" pull "$DEVICE_PATH" "$OUTPUT"
 adb "${SERIAL[@]+"${SERIAL[@]}"}" shell rm -f "$DEVICE_PATH"
 
-DIMENSIONS=$(python3 -c "
+# Read PNG IHDR dimensions (stdlib only — no venv needed).
+if command -v python3 &>/dev/null; then
+    DIMENSIONS=$(python3 -c "
 import struct, sys
 with open(sys.argv[1], 'rb') as f:
-    f.read(16)
-    w, h = struct.unpack('>II', f.read(8))
+    hdr = f.read(24)
+    assert len(hdr) == 24 and hdr[:8] == b'\x89PNG\r\n\x1a\n'
+    w, h = struct.unpack('>II', hdr[16:24])
     print(f'{w}x{h}')
 " "$OUTPUT" 2>/dev/null) || DIMENSIONS="unknown"
+else
+    DIMENSIONS="unknown"
+fi
+
+if [[ "$DIMENSIONS" == "unknown" ]]; then
+    echo "Warning: could not read PNG dimensions from $OUTPUT" >&2
+fi
 echo "$OUTPUT $DIMENSIONS"
