@@ -31,8 +31,8 @@ Add the following to your `~/.claude/settings.json`:
     "Bash(*/skills/claude-adb-skill/tools/ui_dump.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/cleanup.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/setup.sh*)",
-    "Bash(*/skills/claude-adb-skill/tools/gesture_helper.py *)",
-    "Bash(*/skills/claude-adb-skill/tools/find_colors.py *)",
+    "Bash(*/skills/claude-adb-skill/tools/gesture_helper.sh *)",
+    "Bash(*/skills/claude-adb-skill/tools/find_colors.sh *)",
     "Bash(*/skills/claude-adb-skill/tools/input.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/app.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/device_info.sh*)",
@@ -52,8 +52,8 @@ Add the following to your `~/.claude/settings.json`:
 | `*/ui_dump.sh*` | Dump + pull UI hierarchy (wraps `uiautomator` + `pull`) |
 | `*/cleanup.sh*` | Remove temp files locally and on device |
 | `*/setup.sh*` | One-time venv + ATX agent setup |
-| `*/gesture_helper.py *` | Multi-touch gestures and long-press — trailing space enforces required gesture arg |
-| `*/find_colors.py *` | Color-based element finder — trailing space enforces required image arg |
+| `*/gesture_helper.sh *` | Multi-touch gestures and long-press — trailing space enforces required gesture arg |
+| `*/find_colors.sh *` | Color-based element finder — trailing space enforces required image arg |
 | `*/input.sh*` | Tap, swipe, type text, key events (wraps `adb shell input`) |
 | `*/app.sh*` | Install APKs, launch/stop apps, list packages (wraps `am` + `install` + `pm list`) |
 | `*/device_info.sh*` | List devices, screen size, model, OS version, top activity |
@@ -114,7 +114,7 @@ Use `/adb` when you want to start a standalone device interaction:
 | **Files** | Push/pull files to/from device (via `file.sh`) |
 | **Screenshots** | Capture screen with dimensions, view it visually, identify UI elements |
 | **UI interaction** | Tap, swipe, long-press, type text, key events (via `input.sh`), UI hierarchy dump |
-| **Coordinate precision** | Find colored elements by pixel color (`find_colors.py`), image-to-device coordinate scaling |
+| **Coordinate precision** | Find colored elements by pixel color (`find_colors.sh`), image-to-device coordinate scaling |
 | **Map gestures** | Pan, double-tap zoom, pinch zoom in/out, tilt, rotate |
 
 ## Multi-Touch Gestures
@@ -128,9 +128,9 @@ One-time setup:
 ```
 Run from the skill's root directory.
 
-This creates a local `.venv/` with uiautomator2 installed and initializes the ATX agent on the connected device. A device must be connected for this step. If the venv becomes stale (e.g. after a Python version upgrade), `setup.sh` auto-detects and recreates the venv.
+This creates a local `.venv/` with uiautomator2 and Pillow installed, and initializes the ATX agent on the connected device. A device must be connected for this step. If the venv becomes stale (e.g. after a Python version upgrade), `setup.sh` auto-detects and recreates the venv.
 
-For multi-device setups, pass `--serial <serial>` (or `-s <serial>`) to `gesture_helper.py` to target a specific device.
+For multi-device setups, pass `--serial <serial>` (or `-s <serial>`) to `gesture_helper.sh` to target a specific device.
 
 ## File Structure
 
@@ -146,8 +146,10 @@ tools/
   app.sh                  # App lifecycle wrapper (start, stop, install, list)
   device_info.sh          # Device query wrapper (list, size, version, model, top)
   file.sh                 # File transfer wrapper (pull, push)
-  gesture_helper.py       # Gesture CLI (pinch, tilt, rotate, long-press)
-  find_colors.py          # Color-based element finder (uses Pillow)
+  gesture_helper.sh       # Gesture wrapper (pinch, tilt, rotate, long-press)
+  gesture_helper.py       # Gesture implementation (Python, invoked by wrapper)
+  find_colors.sh          # Color finder wrapper (invokes find_colors.py via venv)
+  find_colors.py          # Color finder implementation (Python, uses Pillow)
   setup.sh                # One-time venv + ATX agent setup
   .venv/                  # Python venv (created by setup.sh, gitignored)
 ```

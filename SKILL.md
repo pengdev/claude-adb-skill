@@ -155,7 +155,7 @@ Then Read `/tmp/ui_dump.xml` to find elements by text, resource-id, or class. Ea
 2. Take screenshot — note the reported `WxH` from output: `"$SKILL_DIR/tools/screenshot.sh"` → `/tmp/device_screenshot.png 2960x1848`
 3. Get UI container bounds: `"$SKILL_DIR/tools/ui_dump.sh"` → find the MapView bounds `[L,T][R,B]` in `/tmp/ui_dump.xml`
 4. Locate the target:
-   - **For colored elements** (markers, clusters, icons): use `find_colors.py` (see below)
+   - **For colored elements** (markers, clusters, icons): use `find_colors.sh` (see below)
    - **For UI elements**: use bounds from `ui_dump.xml`
    - **For estimated positions**: express as a fraction of the container, then multiply by device dimensions
 5. Convert image coordinates to device coordinates:
@@ -168,23 +168,23 @@ Then Read `/tmp/ui_dump.xml` to find elements by text, resource-id, or class. Ea
 
 **Finding map elements by color:**
 
-`find_colors.py` locates clusters of specific colors in screenshots and returns their center coordinates in image space.
+`find_colors.sh` locates clusters of specific colors in screenshots and returns their center coordinates in image space.
 
 ```bash
 # Find red markers
-"$SKILL_DIR/tools/.venv/bin/python3" "$SKILL_DIR/tools/find_colors.py" /tmp/screenshot.png red
+"$SKILL_DIR/tools/find_colors.sh" /tmp/screenshot.png red
 
 # Find green clusters with custom tolerance
-"$SKILL_DIR/tools/.venv/bin/python3" "$SKILL_DIR/tools/find_colors.py" /tmp/screenshot.png green --tolerance 80
+"$SKILL_DIR/tools/find_colors.sh" /tmp/screenshot.png green --tolerance 80
 
 # Restrict search to the MapView area (skip toolbar/nav bar)
-"$SKILL_DIR/tools/.venv/bin/python3" "$SKILL_DIR/tools/find_colors.py" /tmp/screenshot.png red --bounds 0,120,2960,1848
+"$SKILL_DIR/tools/find_colors.sh" /tmp/screenshot.png red --bounds 0,120,2960,1848
 
 # Custom RGB color
-"$SKILL_DIR/tools/.venv/bin/python3" "$SKILL_DIR/tools/find_colors.py" /tmp/screenshot.png --rgb 51,102,255
+"$SKILL_DIR/tools/find_colors.sh" /tmp/screenshot.png --rgb 51,102,255
 
 # JSON output for programmatic use
-"$SKILL_DIR/tools/.venv/bin/python3" "$SKILL_DIR/tools/find_colors.py" /tmp/screenshot.png red --json
+"$SKILL_DIR/tools/find_colors.sh" /tmp/screenshot.png red --json
 ```
 
 Available named colors: `red`, `green`, `blue`, `yellow`, `orange`, `white`, `black`, `cyan`, `magenta`. Named colors are approximate — if a named color misses visible elements, use `--rgb R,G,B` to target the exact shade, or increase `--tolerance`. Default tolerance is 70; lower for stricter matching, higher (80-100) for broader matching. Use `--min-size` (default 10) to filter out noise.
@@ -201,7 +201,7 @@ Available named colors: `red`, `green`, `blue`, `yellow`, `orange`, `white`, `bl
 
 - After each zoom gesture, ALWAYS re-screenshot and re-identify the target before the next gesture. Never chain multiple zooms without re-screenshotting.
 - Double-tap zoom centers on the tap point — coordinate offset errors compound exponentially with each zoom.
-- For precise targeting: zoom to the general area (2–3 steps with re-screenshot between each), then use `find_colors.py` or `ui_dump.sh` for exact coordinates of the shifted target.
+- For precise targeting: zoom to the general area (2–3 steps with re-screenshot between each), then use `find_colors.sh` or `ui_dump.sh` for exact coordinates of the shifted target.
 
 ### Single-Touch Gestures (reliable)
 
@@ -212,7 +212,7 @@ Available named colors: `red`, `green`, `blue`, `yellow`, `orange`, `white`, `bl
 
 **Long press** (e.g. to select a map point, drop a pin):
 ```bash
-"$SKILL_DIR/tools/.venv/bin/python3" "$SKILL_DIR/tools/gesture_helper.py" long_press <cx> <cy> --duration 1000
+"$SKILL_DIR/tools/gesture_helper.sh" long_press <cx> <cy> --duration 1000
 ```
 
 **Pan map:**
@@ -227,12 +227,12 @@ Available named colors: `red`, `green`, `blue`, `yellow`, `orange`, `white`, `bl
 
 ### Multi-Touch Gestures (via uiautomator2)
 
-Multi-touch gestures use `$SKILL_DIR/tools/gesture_helper.py` with a local Python venv.
+Multi-touch gestures use `$SKILL_DIR/tools/gesture_helper.sh` (a shell wrapper around `gesture_helper.py` using the local Python venv).
 
 **Setup prerequisites:**
 - A device must be connected — `setup.sh` installs the ATX agent on the device.
 - If the venv becomes stale (e.g. after a Python upgrade), `setup.sh` auto-detects and recreates it.
-- For multi-device setups, pass `--serial <serial>` (or `-s <serial>`) to `gesture_helper.py`.
+- For multi-device setups, pass `--serial <serial>` (or `-s <serial>`) to `gesture_helper.sh`.
 
 **Ensure the venv exists** (idempotent — safe to re-run):
 ```bash
@@ -242,25 +242,25 @@ Multi-touch gestures use `$SKILL_DIR/tools/gesture_helper.py` with a local Pytho
 **Invoke gestures:**
 ```bash
 # Pinch zoom in (spread fingers outward)
-"$SKILL_DIR/tools/.venv/bin/python3" "$SKILL_DIR/tools/gesture_helper.py" pinch_out <cx> <cy> --radius 200 --steps 30
+"$SKILL_DIR/tools/gesture_helper.sh" pinch_out <cx> <cy> --radius 200 --steps 30
 
 # Pinch zoom out (pinch fingers inward) — this is the only way to zoom out
-"$SKILL_DIR/tools/.venv/bin/python3" "$SKILL_DIR/tools/gesture_helper.py" pinch_in <cx> <cy> --radius 200 --steps 30
+"$SKILL_DIR/tools/gesture_helper.sh" pinch_in <cx> <cy> --radius 200 --steps 30
 
 # Tilt map forward (two-finger swipe up)
-"$SKILL_DIR/tools/.venv/bin/python3" "$SKILL_DIR/tools/gesture_helper.py" tilt_up <cx> <cy> --radius 300 --steps 30
+"$SKILL_DIR/tools/gesture_helper.sh" tilt_up <cx> <cy> --radius 300 --steps 30
 
 # Tilt map back (two-finger swipe down)
-"$SKILL_DIR/tools/.venv/bin/python3" "$SKILL_DIR/tools/gesture_helper.py" tilt_down <cx> <cy> --radius 300 --steps 30
+"$SKILL_DIR/tools/gesture_helper.sh" tilt_down <cx> <cy> --radius 300 --steps 30
 
 # Rotate clockwise
-"$SKILL_DIR/tools/.venv/bin/python3" "$SKILL_DIR/tools/gesture_helper.py" rotate_cw <cx> <cy> --radius 200 --steps 30
+"$SKILL_DIR/tools/gesture_helper.sh" rotate_cw <cx> <cy> --radius 200 --steps 30
 
 # Rotate counter-clockwise
-"$SKILL_DIR/tools/.venv/bin/python3" "$SKILL_DIR/tools/gesture_helper.py" rotate_ccw <cx> <cy> --radius 200 --steps 30
+"$SKILL_DIR/tools/gesture_helper.sh" rotate_ccw <cx> <cy> --radius 200 --steps 30
 
 # Multi-device: pass --serial / -s
-"$SKILL_DIR/tools/.venv/bin/python3" "$SKILL_DIR/tools/gesture_helper.py" pinch_out <cx> <cy> -s <serial>
+"$SKILL_DIR/tools/gesture_helper.sh" pinch_out <cx> <cy> -s <serial>
 ```
 
 If `cx`/`cy` are omitted, screen center is used. Adjust `--radius` for gesture magnitude (larger = more zoom/tilt/rotation). Adjust `--steps` for smoothness (higher = smoother but slower).
@@ -276,7 +276,7 @@ If `cx`/`cy` are omitted, screen center is used. Adjust `--radius` for gesture m
 
 ## Recommended Permissions
 
-Add these to `~/.claude/settings.json` under `permissions.allow` to avoid repeated prompts for standard operations. Dangerous commands (`adb uninstall`, `adb shell pm clear`, `adb shell rm`) are intentionally excluded and will always prompt. Note: the `logcat.sh`, `gesture_helper.py`, and `find_colors.py` patterns have a trailing space before `*` to enforce their required first argument.
+Add these to `~/.claude/settings.json` under `permissions.allow` to avoid repeated prompts for standard operations. Dangerous commands (`adb uninstall`, `adb shell pm clear`, `adb shell rm`) are intentionally excluded and will always prompt. Note: the `logcat.sh`, `gesture_helper.sh`, and `find_colors.sh` patterns have a trailing space before `*` to enforce their required first argument.
 
 ```json
 "permissions": {
@@ -286,8 +286,8 @@ Add these to `~/.claude/settings.json` under `permissions.allow` to avoid repeat
     "Bash(*/skills/claude-adb-skill/tools/ui_dump.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/cleanup.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/setup.sh*)",
-    "Bash(*/skills/claude-adb-skill/tools/gesture_helper.py *)",
-    "Bash(*/skills/claude-adb-skill/tools/find_colors.py *)",
+    "Bash(*/skills/claude-adb-skill/tools/gesture_helper.sh *)",
+    "Bash(*/skills/claude-adb-skill/tools/find_colors.sh *)",
     "Bash(*/skills/claude-adb-skill/tools/input.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/app.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/device_info.sh*)",
