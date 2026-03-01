@@ -33,7 +33,7 @@ Add the following to your `~/.claude/settings.json`:
     "Bash(*/skills/claude-adb-skill/tools/setup.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/gesture_helper.sh *)",
     "Bash(*/skills/claude-adb-skill/tools/find_colors.sh *)",
-    "Bash(*/skills/claude-adb-skill/tools/input.sh*)",
+    "Bash(*/skills/claude-adb-skill/tools/input.sh *)",
     "Bash(*/skills/claude-adb-skill/tools/app.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/device_info.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/file.sh*)",
@@ -53,7 +53,7 @@ Add the following to your `~/.claude/settings.json`:
 | `*/setup.sh*` | One-time venv + ATX agent setup |
 | `*/gesture_helper.sh *` | Multi-touch gestures and long-press — trailing space enforces required gesture arg |
 | `*/find_colors.sh *` | Color-based element finder — trailing space enforces required image arg |
-| `*/input.sh*` | Tap, swipe, type text, key events (wraps `adb shell input`) |
+| `*/input.sh *` | Tap, swipe, type text, key events — trailing space enforces required command arg |
 | `*/app.sh*` | Install APKs, launch/stop apps, list packages (wraps `am` + `install` + `pm list`) |
 | `*/device_info.sh*` | List devices, screen size, model, OS version, top activity |
 | `*/file.sh*` | Pull/push files between host and device |

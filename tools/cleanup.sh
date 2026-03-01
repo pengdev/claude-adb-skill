@@ -24,8 +24,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Local cleanup
-rm -f /tmp/adb-skill-* "${EXTRA_FILES[@]+"${EXTRA_FILES[@]}"}"
+# Local cleanup — use nullglob so unmatched glob expands to nothing.
+shopt -s nullglob
+LOCAL_FILES=(/tmp/adb-skill-*)
+shopt -u nullglob
+rm -f "${LOCAL_FILES[@]+"${LOCAL_FILES[@]}"}" "${EXTRA_FILES[@]+"${EXTRA_FILES[@]}"}"
 
 # Device cleanup — non-fatal if device is unavailable
 adb "${SERIAL[@]+"${SERIAL[@]}"}" shell rm -f /sdcard/screenshot_tmp.png /sdcard/ui_dump_tmp.xml || \

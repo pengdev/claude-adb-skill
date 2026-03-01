@@ -42,7 +42,7 @@ adb uninstall com.package.name
 
 **Logcat — always use the logcat wrapper for PID-filtered output:**
 ```bash
-# Dump recent logs (last 60 lines)
+# Dump recent logs (last 60 log entries)
 "$SKILL_DIR/tools/logcat.sh" com.package.name -d
 
 # Stream for 15s (default)
@@ -274,7 +274,7 @@ If `cx`/`cy` are omitted, screen center is used. Adjust `--radius` for gesture m
 
 ## Recommended Permissions
 
-Add these to `~/.claude/settings.json` under `permissions.allow` to avoid repeated prompts for standard operations. Dangerous commands (`adb uninstall`, `adb shell pm clear`, `adb shell rm`) are intentionally excluded and will always prompt. Note: the `logcat.sh`, `gesture_helper.sh`, and `find_colors.sh` patterns have a trailing space before `*` to enforce their required first argument.
+Add these to `~/.claude/settings.json` under `permissions.allow` to avoid repeated prompts for standard operations. Dangerous commands (`adb uninstall`, `adb shell pm clear`, `adb shell rm`) are intentionally excluded and will always prompt. Note: the `logcat.sh`, `input.sh`, `gesture_helper.sh`, and `find_colors.sh` patterns have a trailing space before `*` to enforce their required first argument.
 
 ```json
 "permissions": {
@@ -286,7 +286,7 @@ Add these to `~/.claude/settings.json` under `permissions.allow` to avoid repeat
     "Bash(*/skills/claude-adb-skill/tools/setup.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/gesture_helper.sh *)",
     "Bash(*/skills/claude-adb-skill/tools/find_colors.sh *)",
-    "Bash(*/skills/claude-adb-skill/tools/input.sh*)",
+    "Bash(*/skills/claude-adb-skill/tools/input.sh *)",
     "Bash(*/skills/claude-adb-skill/tools/app.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/device_info.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/file.sh*)",

@@ -10,7 +10,7 @@
 #
 # Examples:
 #   logcat.sh com.mapbox.maps           # Stream for 15s, PID-filtered
-#   logcat.sh com.mapbox.maps -d        # Dump last 60 lines of logs
+#   logcat.sh com.mapbox.maps -d        # Dump last 60 log entries
 #   logcat.sh com.mapbox.maps -c -t 10  # Clear, then stream 10s
 #   logcat.sh com.mapbox.maps --tags "MapboxMap,GL"
 
@@ -46,22 +46,23 @@ if $CLEAR; then
   adb "${SERIAL[@]+"${SERIAL[@]}"}" logcat -c
 fi
 
-PID=$(adb "${SERIAL[@]+"${SERIAL[@]}"}" shell pidof "$PACKAGE" 2>/dev/null || true)
+# Take only the first PID if multiple are returned (multi-process apps).
+PID=$(adb "${SERIAL[@]+"${SERIAL[@]}"}" shell pidof "$PACKAGE" 2>/dev/null | awk '{print $1}' || true)
+
+# Build grep pattern once for the fallback path.
+GREP_PATTERN="$PACKAGE"
+[ -n "$TAGS" ] && GREP_PATTERN="$PACKAGE|${TAGS//,/|}"
 
 if $DUMP; then
   if [ -n "$PID" ]; then
     adb "${SERIAL[@]+"${SERIAL[@]}"}" logcat -d -t 60 --pid="$PID"
   else
-    GREP_PATTERN="$PACKAGE"
-    [ -n "$TAGS" ] && GREP_PATTERN="$PACKAGE|${TAGS//,/|}"
     adb "${SERIAL[@]+"${SERIAL[@]}"}" logcat -d -t 60 | grep -E "$GREP_PATTERN" || true
   fi
 else
   if [ -n "$PID" ]; then
     timeout "$DURATION" adb "${SERIAL[@]+"${SERIAL[@]}"}" logcat --pid="$PID" || true
   else
-    GREP_PATTERN="$PACKAGE"
-    [ -n "$TAGS" ] && GREP_PATTERN="$PACKAGE|${TAGS//,/|}"
     timeout "$DURATION" adb "${SERIAL[@]+"${SERIAL[@]}"}" logcat | grep -E "$GREP_PATTERN" || true
   fi
 fi

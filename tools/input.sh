@@ -42,4 +42,11 @@ fi
 
 sleep "$DELAY"
 
-adb "${SERIAL[@]+"${SERIAL[@]}"}" shell input "$@"
+# For 'text' subcommand, join all remaining args into a single string so
+# spaces survive the adb shell boundary (adb splits on whitespace otherwise).
+if [[ "${1:-}" == "text" ]] && [[ $# -ge 2 ]]; then
+    shift
+    adb "${SERIAL[@]+"${SERIAL[@]}"}" shell input text "$*"
+else
+    adb "${SERIAL[@]+"${SERIAL[@]}"}" shell input "$@"
+fi
