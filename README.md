@@ -1,6 +1,6 @@
 # ADB Skill for Claude Code
 
-A [Claude Code skill](https://docs.anthropic.com/en/docs/claude-code/skills) that lets Claude operate on connected Android devices via ADB — install apps, view logs, take screenshots, tap UI elements, and perform multi-touch map gestures (pinch zoom, tilt, rotate) and long-press.
+A [Claude Code skill](https://docs.anthropic.com/en/docs/claude-code/skills) that lets Claude operate on connected Android devices via ADB — install apps, view logs, take screenshots, tap UI elements, locate on-screen elements by color, and perform multi-touch map gestures (pinch zoom, tilt, rotate) and long-press.
 
 ## Installation
 
@@ -14,7 +14,7 @@ git clone https://github.com/pengdev/claude-adb-skill.git ~/.claude/skills/claud
 
 - `adb` on your PATH (from Android SDK platform-tools)
 - A connected Android device or emulator (`adb devices` shows it)
-- Python 3 (for multi-touch gestures and long-press)
+- Python 3 (for multi-touch gestures, long-press, and color-based element finding)
 - `setup.sh` initializes the ATX agent on the connected device — a device must be connected when you run it
 
 ## Permissions
@@ -138,7 +138,7 @@ For multi-device setups, pass `--serial <serial>` (or `-s <serial>`) to `gesture
 SKILL.md                  # Skill instructions (loaded by Claude Code)
 README.md                 # This file
 tools/
-  screenshot.sh           # Screenshot capture + pull
+  screenshot.sh           # Screenshot capture + pull (with dimensions)
   logcat.sh               # PID-filtered logcat with safe fallback
   ui_dump.sh              # UI hierarchy dump + pull
   cleanup.sh              # Remove temp files (local + device)
