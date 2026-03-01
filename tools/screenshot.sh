@@ -2,19 +2,19 @@
 # screenshot.sh — Capture a screenshot from a connected Android device.
 #
 # Usage: screenshot.sh [OPTIONS]
-#   -o, --output PATH    Local destination (default: /tmp/device_screenshot.png)
+#   -o, --output PATH    Local destination (default: /tmp/adb-skill-screenshot.png)
 #   -d, --delay SECONDS  Sleep before capturing (default: 0)
 #   -s, --serial SERIAL  Target device serial (for multi-device setups)
 #
 # Examples:
 #   screenshot.sh
-#   screenshot.sh -o /tmp/step1_home.png
-#   screenshot.sh -d 2 -o /tmp/after_tap.png
-#   screenshot.sh -s emulator-5554 -o /tmp/emu_screen.png
+#   screenshot.sh -o /tmp/adb-skill-before_tap.png
+#   screenshot.sh -d 2 -o /tmp/adb-skill-after_tap.png
+#   screenshot.sh -s emulator-5554 -o /tmp/adb-skill-emu_screen.png
 
 set -euo pipefail
 
-OUTPUT="/tmp/device_screenshot.png"
+OUTPUT="/tmp/adb-skill-screenshot.png"
 DELAY=0
 SERIAL=()
 

@@ -95,29 +95,27 @@ For multi-module projects, identify the app module (often `app/`) and build that
 **Take and view a screenshot:**
 ```bash
 "$SKILL_DIR/tools/screenshot.sh"
-"$SKILL_DIR/tools/screenshot.sh" -o /tmp/before_tap.png
-"$SKILL_DIR/tools/screenshot.sh" -d 2 -o /tmp/after_tap.png   # 2s delay before capture
+"$SKILL_DIR/tools/screenshot.sh" -o /tmp/adb-skill-before_tap.png
+"$SKILL_DIR/tools/screenshot.sh" -d 2 -o /tmp/adb-skill-after_tap.png   # 2s delay before capture
 ```
 Then use the Read tool on the output path to view it. You are a multimodal LLM and can see the image.
 
-Use descriptive filenames to distinguish screenshots taken at different points:
-- `/tmp/before_tap.png`, `/tmp/after_tap.png`
-- `/tmp/step1_home.png`, `/tmp/step2_detail.png`
-
-This prevents overwriting and makes it easy to compare before/after states.
+**IMPORTANT:** Always use the `/tmp/adb-skill-` prefix for ALL output files (screenshots, UI dumps). This ensures the `Read(/tmp/adb-skill-*)` permission rule covers them without prompting. Use descriptive suffixes to distinguish screenshots:
+- `/tmp/adb-skill-before_tap.png`, `/tmp/adb-skill-after_tap.png`
+- `/tmp/adb-skill-step1_home.png`, `/tmp/adb-skill-step2_detail.png`
 
 **Workflow for clicking a UI element:**
-1. Take a screenshot: `"$SKILL_DIR/tools/screenshot.sh" -o /tmp/before_tap.png`
+1. Take a screenshot: `"$SKILL_DIR/tools/screenshot.sh" -o /tmp/adb-skill-before_tap.png`
 2. Read the screenshot with the Read tool to identify layout and coordinates
 3. If coordinates are ambiguous, dump the UI hierarchy for exact bounds (see below)
 4. Tap with `"$SKILL_DIR/tools/input.sh" tap <x> <y>`
-5. Confirm the result: `"$SKILL_DIR/tools/screenshot.sh" -o /tmp/after_tap.png`
+5. Confirm the result: `"$SKILL_DIR/tools/screenshot.sh" -o /tmp/adb-skill-after_tap.png`
 
 **UI hierarchy — get exact element bounds when visual estimation is uncertain:**
 ```bash
 "$SKILL_DIR/tools/ui_dump.sh"
 ```
-Then Read `/tmp/ui_dump.xml` to find elements by text, resource-id, or class. Each node has a `bounds` attribute like `[left,top][right,bottom]` — tap the center of the bounds rectangle.
+Then Read `/tmp/adb-skill-ui_dump.xml` to find elements by text, resource-id, or class. Each node has a `bounds` attribute like `[left,top][right,bottom]` — tap the center of the bounds rectangle.
 
 **Input commands:**
 ```bash
@@ -152,8 +150,8 @@ Then Read `/tmp/ui_dump.xml` to find elements by text, resource-id, or class. Ea
 
 **Coordinate calculation workflow:**
 1. Get device screen size: `"$SKILL_DIR/tools/device_info.sh" size` → e.g., `1080x2400`
-2. Take screenshot — note the reported `WxH` from output: `"$SKILL_DIR/tools/screenshot.sh"` → `/tmp/device_screenshot.png 2960x1848`
-3. Get UI container bounds: `"$SKILL_DIR/tools/ui_dump.sh"` → find the MapView bounds `[L,T][R,B]` in `/tmp/ui_dump.xml`
+2. Take screenshot — note the reported `WxH` from output: `"$SKILL_DIR/tools/screenshot.sh"` → `/tmp/adb-skill-screenshot.png 2960x1848`
+3. Get UI container bounds: `"$SKILL_DIR/tools/ui_dump.sh"` → find the MapView bounds `[L,T][R,B]` in `/tmp/adb-skill-ui_dump.xml`
 4. Locate the target:
    - **For colored elements** (markers, clusters, icons): use `find_colors.sh` (see below)
    - **For UI elements**: use bounds from `ui_dump.xml`
@@ -172,19 +170,19 @@ Then Read `/tmp/ui_dump.xml` to find elements by text, resource-id, or class. Ea
 
 ```bash
 # Find red markers
-"$SKILL_DIR/tools/find_colors.sh" /tmp/screenshot.png red
+"$SKILL_DIR/tools/find_colors.sh" /tmp/adb-skill-screenshot.png red
 
 # Find green clusters with custom tolerance
-"$SKILL_DIR/tools/find_colors.sh" /tmp/screenshot.png green --tolerance 80
+"$SKILL_DIR/tools/find_colors.sh" /tmp/adb-skill-screenshot.png green --tolerance 80
 
 # Restrict search to the MapView area (skip toolbar/nav bar)
-"$SKILL_DIR/tools/find_colors.sh" /tmp/screenshot.png red --bounds 0,120,2960,1848
+"$SKILL_DIR/tools/find_colors.sh" /tmp/adb-skill-screenshot.png red --bounds 0,120,2960,1848
 
 # Custom RGB color
-"$SKILL_DIR/tools/find_colors.sh" /tmp/screenshot.png --rgb 51,102,255
+"$SKILL_DIR/tools/find_colors.sh" /tmp/adb-skill-screenshot.png --rgb 51,102,255
 
 # JSON output for programmatic use
-"$SKILL_DIR/tools/find_colors.sh" /tmp/screenshot.png red --json
+"$SKILL_DIR/tools/find_colors.sh" /tmp/adb-skill-screenshot.png red --json
 ```
 
 Available named colors: `red`, `green`, `blue`, `yellow`, `orange`, `white`, `black`, `cyan`, `magenta`. Named colors are approximate — if a named color misses visible elements, use `--rgb R,G,B` to target the exact shade, or increase `--tolerance`. Default tolerance is 70; lower for stricter matching, higher (80-100) for broader matching. Use `--min-size` (default 10) to filter out noise.
@@ -292,8 +290,7 @@ Add these to `~/.claude/settings.json` under `permissions.allow` to avoid repeat
     "Bash(*/skills/claude-adb-skill/tools/app.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/device_info.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/file.sh*)",
-    "Read(/tmp/*.png)",
-    "Read(/tmp/ui_dump.xml)"
+    "Read(/tmp/adb-skill-*)"
   ]
 }
 ```
