@@ -37,7 +37,7 @@ Add the following to your `~/.claude/settings.json`:
     "Bash(*/skills/claude-adb-skill/tools/app.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/device_info.sh*)",
     "Bash(*/skills/claude-adb-skill/tools/file.sh*)",
-    "Read(/tmp/adb-skill-*)"
+    "Read(/tmp/adb-skill/)"
   ]
 }
 ```
@@ -57,7 +57,7 @@ Add the following to your `~/.claude/settings.json`:
 | `*/app.sh*` | Install APKs, launch/stop apps, list packages (wraps `am` + `install` + `pm list`) |
 | `*/device_info.sh*` | List devices, screen size, model, OS version, top activity |
 | `*/file.sh*` | Pull/push files between host and device |
-| `Read(/tmp/adb-skill-*)` | View pulled screenshots and UI hierarchy |
+| `Read(/tmp/adb-skill/)` | View pulled screenshots and UI hierarchy |
 
 **Intentionally excluded** (will always prompt): `adb uninstall`, `adb shell pm clear`, `adb shell rm`.
 
