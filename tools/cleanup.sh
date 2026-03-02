@@ -32,4 +32,9 @@ rm -f "${EXTRA_FILES[@]+"${EXTRA_FILES[@]}"}"
 adb "${SERIAL[@]+"${SERIAL[@]}"}" shell rm -f /sdcard/screenshot_tmp.png /sdcard/ui_dump_tmp.xml || \
   echo "Warning: device cleanup skipped (device unavailable or ambiguous)" >&2
 
+# Kill the ATX agent to prevent "UiAutomationService already registered" on
+# the next uiautomator2 session. The agent process lingers after a crash or
+# abrupt session end and blocks re-initialization.
+adb "${SERIAL[@]+"${SERIAL[@]}"}" shell am force-stop com.github.uiautomator 2>/dev/null || true
+
 echo "Cleanup complete."

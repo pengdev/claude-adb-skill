@@ -144,6 +144,7 @@ Then Read `/tmp/adb-skill/ui_dump.xml` to find elements by text, resource-id, or
 # Multi-device:
 "$SKILL_DIR/tools/cleanup.sh" -s <serial>
 ```
+`cleanup.sh` also kills the ATX agent (`com.github.uiautomator`) to prevent a `UiAutomationService already registered` crash on the next uiautomator2 session. Always run cleanup between sequential test runs or before reinitializing gestures.
 
 ## Coordinate Precision
 
