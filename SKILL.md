@@ -114,7 +114,7 @@ For multi-module projects, identify the app module (often `app/`) and build that
 android layout --pretty
 
 # Secondary: annotated screenshot with numbered element labels
-android screen capture --output=/tmp/adb-skill/screen.png --annotate
+android screen capture --annotate -o /tmp/adb-skill/screen.png
 # Then Read the PNG to see element numbers
 
 # Resolve element coordinates from annotation labels
@@ -124,11 +124,11 @@ android screen resolve --screen /tmp/adb-skill/screen.png --string "#3"
 
 **Workflow for clicking a UI element:**
 1. `android layout --pretty` — identify element by text/resourceId, use its `center` field
-2. If element isn't in layout (WebView, animation): `android screen capture --output=/tmp/adb-skill/screen.png --annotate`
-3. Read the annotated PNG; note the element's label number
-4. `android screen resolve --screen /tmp/adb-skill/screen.png --string "#<N>"` → `<x> <y>`
-5. Tap: `"$SKILL_DIR/tools/input.sh" tap <x> <y>`
-6. Confirm: `android layout --diff` or `android screen capture --output=/tmp/adb-skill/after.png --annotate`
+2. If element isn't in layout — fall back based on reason:
+   - **WebView / animation**: `android screen capture --annotate -o /tmp/adb-skill/screen.png` → Read PNG → `android screen resolve --screen /tmp/adb-skill/screen.png --string "#<N>"`
+   - **OpenGL/Vulkan canvas** (SurfaceView, TextureView — e.g. maps, games, custom renderers): `android layout` and annotation overlays cannot see inside the canvas. Use `"$SKILL_DIR/tools/screenshot.sh"` + `find_colors.sh` instead — see Coordinate Precision section.
+3. Tap: `"$SKILL_DIR/tools/input.sh" tap <x> <y>`
+4. Confirm: `android layout --diff` or `android screen capture --annotate -o /tmp/adb-skill/after.png`
 
 **Fallback — raw screenshot when android-cli is unavailable:**
 ```bash
@@ -224,7 +224,7 @@ Available named colors: `red`, `green`, `blue`, `yellow`, `orange`, `white`, `bl
 
 1. Run `"$SKILL_DIR/tools/device_info.sh" size` to get screen resolution
 2. Capture a screenshot to identify the map area vs UI overlays (toolbars, FABs, bottom bars):
-   - Prefer: `android screen capture --output=/tmp/adb-skill/map.png`
+   - Prefer: `android screen capture -o /tmp/adb-skill/map.png`
    - Fallback: `"$SKILL_DIR/tools/screenshot.sh" -o /tmp/adb-skill/map.png`
 3. Compute the map center coordinates — target all gestures within the map area only
 
@@ -301,7 +301,7 @@ If `cx`/`cy` are omitted, screen center is used. Adjust `--radius` for gesture m
 - When `INSTALL_FAILED_UPDATE_INCOMPATIBLE` occurs, uninstall the existing app first.
 - Use `"$SKILL_DIR/tools/app.sh" start` with the fully qualified component name to launch exported activities.
 - Parse and summarize logcat output — don't dump raw logs without explanation.
-- Always take a screenshot before UI interaction to see the current state.
+- Before UI interaction, run `android layout` first — it's faster and gives exact coordinates. Fall back to `android screen capture --annotate` for WebView/animation, and to `screenshot.sh` + `find_colors.sh` for OpenGL/Vulkan canvas content (SurfaceView, TextureView) which is invisible to both layout and annotation overlays.
 - For map gesture coordinates, compute actual pixel values from screen size and screenshot — don't hardcode.
 - When using a specific device, pass `-s <serial>` to ALL tool scripts and raw `adb` commands consistently throughout the session.
 
