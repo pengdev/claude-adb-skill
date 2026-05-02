@@ -1,6 +1,6 @@
 ---
 name: adb
-description: "Android Debug Bridge operations on connected devices. Use when the user wants to install/run apps, view logcat, take screenshots, interact with UI, or operate on a connected Android device."
+description: "Supplements the android-cli skill with low-level ADB operations not covered by the Android CLI: logcat (PID-filtered), multi-touch gestures (pinch/rotate/tilt via uiautomator2), file push/pull, coordinate precision, and color-based element finding. Requires the android-cli skill — invoke /android-cli first."
 argument-hint: "[command or description]"
 ---
 
@@ -9,6 +9,17 @@ argument-hint: "[command or description]"
 You help the user operate on connected Android devices via `adb`.
 
 **SKILL_DIR**: The "Base directory for this skill" shown above when this skill is loaded. Use it to resolve all relative tool paths below (e.g. `$SKILL_DIR/tools/setup.sh`).
+
+## Depends on: android-cli
+
+This skill requires the android-cli skill. If it hasn't been loaded yet, invoke `/android-cli` before proceeding.
+
+The android-cli skill handles app deployment, screenshots, and UI layout inspection. Install it if not already set up:
+```bash
+curl -fsSL https://dl.google.com/android/cli/latest/darwin_arm64/install.sh | bash
+android skills add --agent='claude-code' --all
+```
+See: https://developer.android.com/tools/agents/android-cli
 
 ## Before Running Commands
 
@@ -78,14 +89,17 @@ adb shell pm clear com.package.name
 
 ## Build & Deploy
 
-When validating code changes on a device, build the APK before installing:
+**Prefer `android run` from the android-cli skill** — it builds, installs, and launches in one step:
+
+```bash
+android run --apks=$(android describe | jq -r '.apks.debug // "app/build/outputs/apk/debug/app-debug.apk"')
+```
+
+Use `app.sh install` only when you need explicit control: installing to a specific activity, a non-standard APK path, or when the Android CLI is unavailable:
 
 ```bash
 # Find the Gradle project root (look for build.gradle.kts or build.gradle)
-# Build the debug APK for the target module
 ./gradlew <module>:assembleDebug
-
-# The APK is at: <module>/build/outputs/apk/debug/<module>-debug.apk
 "$SKILL_DIR/tools/app.sh" install <module>/build/outputs/apk/debug/<module>-debug.apk
 ```
 
@@ -93,30 +107,42 @@ For multi-module projects, identify the app module (often `app/`) and build that
 
 ## Screenshot and UI Interaction
 
-**Take and view a screenshot:**
+**Prefer android-cli for inspection** — it returns richer data than raw screenshots:
+
 ```bash
-"$SKILL_DIR/tools/screenshot.sh"
+# Primary: JSON layout tree (fast, no image needed)
+android layout --pretty
+
+# Secondary: annotated screenshot with numbered element labels
+android screen capture --output=/tmp/adb-skill/screen.png --annotate
+# Then Read the PNG to see element numbers
+
+# Resolve element coordinates from annotation labels
+android screen resolve --screen /tmp/adb-skill/screen.png --string "#3"
+# Returns: <x> <y> — feed directly to input.sh
+```
+
+**Workflow for clicking a UI element:**
+1. `android layout --pretty` — identify element by text/resourceId, use its `center` field
+2. If element isn't in layout (WebView, animation): `android screen capture --output=/tmp/adb-skill/screen.png --annotate`
+3. Read the annotated PNG; note the element's label number
+4. `android screen resolve --screen /tmp/adb-skill/screen.png --string "#<N>"` → `<x> <y>`
+5. Tap: `"$SKILL_DIR/tools/input.sh" tap <x> <y>`
+6. Confirm: `android layout --diff` or `android screen capture --output=/tmp/adb-skill/after.png --annotate`
+
+**Fallback — raw screenshot when android-cli is unavailable:**
+```bash
 "$SKILL_DIR/tools/screenshot.sh" -o /tmp/adb-skill/before_tap.png
 "$SKILL_DIR/tools/screenshot.sh" -d 2 -o /tmp/adb-skill/after_tap.png   # 2s delay before capture
 ```
-Then use the Read tool on the output path to view it. You are a multimodal LLM and can see the image.
 
-**IMPORTANT:** Always save output files to the `/tmp/adb-skill/` directory. This ensures the `Read(/tmp/adb-skill/)` permission rule covers them without prompting. Use descriptive names to distinguish screenshots:
-- `/tmp/adb-skill/before_tap.png`, `/tmp/adb-skill/after_tap.png`
-- `/tmp/adb-skill/step1_home.png`, `/tmp/adb-skill/step2_detail.png`
-
-**Workflow for clicking a UI element:**
-1. Take a screenshot: `"$SKILL_DIR/tools/screenshot.sh" -o /tmp/adb-skill/before_tap.png`
-2. Read the screenshot with the Read tool to identify layout and coordinates
-3. If coordinates are ambiguous, dump the UI hierarchy for exact bounds (see below)
-4. Tap with `"$SKILL_DIR/tools/input.sh" tap <x> <y>`
-5. Confirm the result: `"$SKILL_DIR/tools/screenshot.sh" -o /tmp/adb-skill/after_tap.png`
-
-**UI hierarchy — get exact element bounds when visual estimation is uncertain:**
+**Fallback — raw UI hierarchy when android-cli is unavailable:**
 ```bash
 "$SKILL_DIR/tools/ui_dump.sh"
 ```
-Then Read `/tmp/adb-skill/ui_dump.xml` to find elements by text, resource-id, or class. Each node has a `bounds` attribute like `[left,top][right,bottom]` — tap the center of the bounds rectangle.
+Read `/tmp/adb-skill/ui_dump.xml`; each node has a `bounds` attribute like `[left,top][right,bottom]` — tap the center.
+
+**IMPORTANT:** Always save output files to `/tmp/adb-skill/`. This ensures the `Read(/tmp/adb-skill/)` permission rule covers them without prompting.
 
 **Input commands:**
 ```bash
@@ -153,10 +179,13 @@ Then Read `/tmp/adb-skill/ui_dump.xml` to find elements by text, resource-id, or
 **Coordinate calculation workflow:**
 1. Get device screen size: `"$SKILL_DIR/tools/device_info.sh" size` → e.g., `1080x2400`
 2. Take screenshot — note the reported `WxH` from output: `"$SKILL_DIR/tools/screenshot.sh"` → `/tmp/adb-skill/screenshot.png 2960x1848`
-3. Get UI container bounds: `"$SKILL_DIR/tools/ui_dump.sh"` → find the MapView bounds `[L,T][R,B]` in `/tmp/adb-skill/ui_dump.xml`
+   (`screenshot.sh` is used here because it reports image dimensions needed for scale calculation)
+3. Get UI container bounds:
+   - Prefer: `android layout --pretty` → find the MapView element, use its `bounds` field `[L,T][R,B]`
+   - Fallback: `"$SKILL_DIR/tools/ui_dump.sh"` → find bounds in `/tmp/adb-skill/ui_dump.xml`
 4. Locate the target:
    - **For colored elements** (markers, clusters, icons): use `find_colors.sh` (see below)
-   - **For UI elements**: use bounds from `ui_dump.xml`
+   - **For UI elements**: use bounds from `android layout` or `ui_dump.xml`
    - **For estimated positions**: express as a fraction of the container, then multiply by device dimensions
 5. Convert image coordinates to device coordinates:
    ```
@@ -194,14 +223,16 @@ Available named colors: `red`, `green`, `blue`, `yellow`, `orange`, `white`, `bl
 ### Before Any Gesture
 
 1. Run `"$SKILL_DIR/tools/device_info.sh" size` to get screen resolution
-2. Take a screenshot (`"$SKILL_DIR/tools/screenshot.sh"`) and read it to identify the map area vs UI overlays (toolbars, FABs, bottom bars)
+2. Capture a screenshot to identify the map area vs UI overlays (toolbars, FABs, bottom bars):
+   - Prefer: `android screen capture --output=/tmp/adb-skill/map.png`
+   - Fallback: `"$SKILL_DIR/tools/screenshot.sh" -o /tmp/adb-skill/map.png`
 3. Compute the map center coordinates — target all gestures within the map area only
 
 ### Iterative Zoom and Re-identification
 
 - After each zoom gesture, ALWAYS re-screenshot and re-identify the target before the next gesture. Never chain multiple zooms without re-screenshotting.
 - Double-tap zoom centers on the tap point — coordinate offset errors compound exponentially with each zoom.
-- For precise targeting: zoom to the general area (2–3 steps with re-screenshot between each), then use `find_colors.sh` or `ui_dump.sh` for exact coordinates of the shifted target.
+- For precise targeting: zoom to the general area (2–3 steps with re-screenshot between each), then use `find_colors.sh` or `android layout` for exact coordinates of the shifted target.
 
 ### Single-Touch Gestures (reliable)
 

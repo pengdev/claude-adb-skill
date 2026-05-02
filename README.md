@@ -1,8 +1,21 @@
 # ADB Skill for Claude Code
 
-A [Claude Code skill](https://docs.anthropic.com/en/docs/claude-code/skills) that lets Claude operate on connected Android devices via ADB — install apps, view logs, take screenshots, tap UI elements, locate on-screen elements by color, and perform multi-touch map gestures (pinch zoom, tilt, rotate) and long-press.
+A [Claude Code skill](https://docs.anthropic.com/en/docs/claude-code/skills) that supplements the [Android CLI skill](https://developer.android.com/tools/agents/android-cli) with low-level ADB operations: PID-filtered logcat, multi-touch gestures (pinch/tilt/rotate via uiautomator2), file push/pull, coordinate precision, and color-based element finding.
+
+**Designed to be used alongside `/android-cli`**, which handles app deployment, screenshots, and UI layout inspection. This skill adds what the Android CLI does not cover.
 
 ## Installation
+
+### 1. Install the Android CLI (required dependency)
+
+```bash
+curl -fsSL https://dl.google.com/android/cli/latest/darwin_arm64/install.sh | bash
+android skills add --agent='claude-code' --all
+```
+
+See: https://developer.android.com/tools/agents/android-cli
+
+### 2. Install this skill
 
 Clone this repo into your Claude Code skills directory:
 
@@ -12,6 +25,7 @@ git clone https://github.com/pengdev/claude-adb-skill.git ~/.claude/skills/claud
 
 ## Requirements
 
+- Android CLI installed (see above)
 - `adb` on your PATH (from Android SDK platform-tools)
 - A connected Android device or emulator (`adb devices` shows it)
 - Python 3 (for multi-touch gestures, long-press, and color-based element finding)
@@ -63,7 +77,7 @@ Add the following to your `~/.claude/settings.json`:
 
 ## Usage Examples
 
-Claude is a multimodal LLM — it can read screenshots to visually verify UI state, validate bug fixes against descriptions, and confirm layouts match design specs. Combined with ADB access, this means Claude can build, install, interact with, and visually inspect your app end-to-end.
+Claude is a multimodal LLM — it can read screenshots to visually verify UI state, validate bug fixes against descriptions, and confirm layouts match design specs. Combined with ADB access and the Android CLI, this means Claude can build, install, interact with, and visually inspect your app end-to-end.
 
 The skill activates automatically when Claude detects a connected Android device is relevant to your task — no special command needed. You can also invoke it explicitly with `/adb` to start a device-focused session.
 
@@ -78,12 +92,12 @@ Try to validate the fix on device
 
 **After a layout change:**
 ```
-Build and install, then take a screenshot to check the layout looks right
+Build and run the app, then check the layout looks right
 ```
 
 **Investigating a crash:**
 ```
-Install the debug build and stream logcat while I reproduce the crash
+Run the app and stream logcat while I reproduce the crash
 ```
 
 ### Explicit `/adb` invocations
@@ -103,17 +117,21 @@ Use `/adb` when you want to start a standalone device interaction:
 
 ## What It Can Do
 
-| Category | Examples |
-|---|---|
-| **Device management** | List devices, get device info, screen resolution |
-| **App lifecycle** | Install APKs, launch/stop apps, list packages (via `app.sh`) |
-| **Build & deploy** | Build debug APK with Gradle, install on device |
-| **Logcat** | PID-filtered log capture, live streaming with timeout, safe fallback when PID unavailable |
-| **Files** | Push/pull files to/from device (via `file.sh`) |
-| **Screenshots** | Capture screen with dimensions, view it visually, identify UI elements |
-| **UI interaction** | Tap, swipe, long-press, type text, key events (via `input.sh`), UI hierarchy dump |
-| **Coordinate precision** | Find colored elements by pixel color (`find_colors.sh`), image-to-device coordinate scaling |
-| **Map gestures** | Pan, double-tap zoom, pinch zoom in/out, tilt, rotate |
+Tasks marked **android-cli** are handled by that skill and deferred to it; this skill provides the rest.
+
+| Category | Tool | Notes |
+|---|---|---|
+| **Device management** | this skill | List devices, screen size, model, OS version |
+| **App deployment** | android-cli | `android run` — builds, installs, launches in one step |
+| **App lifecycle (raw)** | this skill | `app.sh` — install specific APK, launch/stop by component, list packages |
+| **Logcat** | this skill | PID-filtered capture, live streaming, tag fallback |
+| **Files** | this skill | Push/pull files to/from device |
+| **Screenshots** | android-cli | `android screen capture --annotate` — with element labels |
+| **UI layout** | android-cli | `android layout` — JSON tree with bounds and center coords |
+| **Element resolution** | android-cli | `android screen resolve` — converts annotation labels to coordinates |
+| **Input** | this skill | `input.sh` — tap, swipe, text, key events (android-cli defers to `adb shell input`) |
+| **Multi-touch gestures** | this skill | Pinch, tilt, rotate via uiautomator2 — not available in android-cli |
+| **Coordinate precision** | this skill | Image-to-device scaling, color-based element finding |
 
 ## Multi-Touch Gestures
 
